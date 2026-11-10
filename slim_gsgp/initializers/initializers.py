@@ -27,13 +27,13 @@ from slim_gsgp.algorithms.GP.representations.tree_utils import (
     create_full_random_tree,
     create_grow_random_tree,
 )
-from slim_gsgp.config.types import ConstantFunc, FunctionType
+from slim_gsgp.config.types import ConstantFunc, FunctionDef
 
 
 def grow(
     init_pop_size: int,
     init_depth: int,
-    FUNCTIONS: dict[str, FunctionType],
+    FUNCTIONS: FunctionDef,
     TERMINALS: dict[str, int],
     CONSTANTS: dict[str, ConstantFunc],
     p_c: float = 0.3,
@@ -71,7 +71,7 @@ def grow(
 def full(
     init_pop_size: int,
     init_depth: int,
-    FUNCTIONS: dict[str, FunctionType],
+    FUNCTIONS: FunctionDef,
     TERMINALS: dict[str, int],
     CONSTANTS: dict[str, ConstantFunc],
     p_c: float = 0.3,
@@ -109,7 +109,7 @@ def full(
 def rhh(
     init_pop_size: int,
     init_depth: int,
-    FUNCTIONS: dict[str, FunctionType],
+    FUNCTIONS: FunctionDef,
     TERMINALS: dict[str, int],
     CONSTANTS: dict[str, ConstantFunc],
     p_c: float = 0.3,

@@ -77,6 +77,26 @@ def mse(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     )
 
 
+def se(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
+    """
+    Compute Squared Error (SE).
+
+    Parameters
+    ----------
+    y_true : torch.Tensor
+        True values.
+    y_pred : torch.Tensor
+        Predicted values.
+
+    Returns
+    -------
+    torch.Tensor
+        SE value.
+
+    """
+    return torch.square(torch.sub(y_true, y_pred))
+
+
 def mae(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     """
     Compute Mean Absolute Error (MAE).

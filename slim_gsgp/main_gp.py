@@ -44,7 +44,6 @@ from slim_gsgp.config.gp_config import (
     initializer_options,
     settings_dict,
 )
-from slim_gsgp.evaluators.fitness_functions import rmse
 from slim_gsgp.selection.selection_algorithms import (
     tournament_selection_max,
     tournament_selection_min,
@@ -59,6 +58,11 @@ from slim_gsgp.utils.utils import (
 
 if TYPE_CHECKING:
     from slim_gsgp.algorithms.GP.representations.tree import Tree
+
+_CONSTANT_REPR = [
+    float(key.replace("constant_", "").replace("_", "-")) for key in CONSTANTS
+]
+_FUNCTION_KEYS = list(FUNCTIONS.keys())
 
 
 def gp(
@@ -85,10 +89,8 @@ def gp(
     initializer: str = gp_parameters["initializer"],
     n_jobs: int = gp_solve_parameters["n_jobs"],
     prob_const: float = gp_pi_init["p_c"],
-    tree_functions: list[str] = list(FUNCTIONS.keys()),
-    tree_constants: list[float] = [
-        float(key.replace("constant_", "").replace("_", "-")) for key in CONSTANTS
-    ],
+    tree_functions: list[str] = _FUNCTION_KEYS,
+    tree_constants: list[float] = _CONSTANT_REPR,
     tournament_size: int = 2,
     test_elite: bool = gp_solve_parameters["test_elite"],
 ) -> Tree:
@@ -97,13 +99,13 @@ def gp(
 
     Parameters
     ----------
-    X_train: (torch.Tensor)
+    X_train: torch.Tensor
         Training input data.
-    y_train: (torch.Tensor)
+    y_train: torch.Tensor
         Training output data.
-    X_test: (torch.Tensor), optional
+    X_test: torch.Tensor, optional
         Testing input data.
-    y_test: (torch.Tensor), optional
+    y_test: torch.Tensor, optional
         Testing output data.
     dataset_name : str, optional
         Dataset name, for logging purposes
@@ -342,6 +344,7 @@ def gp(
 
 if __name__ == "__main__":
     from slim_gsgp.datasets.data_loader import load_resid_build_sale_price
+    from slim_gsgp.evaluators.fitness_functions import rmse
     from slim_gsgp.utils.utils import train_test_split
 
     X, y = load_resid_build_sale_price(X_y=True)

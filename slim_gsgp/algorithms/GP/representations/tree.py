@@ -61,10 +61,10 @@ class Tree:
     """
 
     TERMINALS: dict[str, int]
-    FUNCTIONS: dict[str, FunctionDef]
+    FUNCTIONS: FunctionDef
     CONSTANTS: dict[str, ConstantFunc]
 
-    def __init__(self, repr_: tuple):
+    def __init__(self, repr_: torch.Tensor):
         """
         Initializes a Tree object.
 
@@ -76,15 +76,15 @@ class Tree:
         """
         self.FUNCTIONS = Tree.FUNCTIONS
         self.TERMINALS = Tree.TERMINALS
-        self.CONSTANTS = Tree.CONSTANTS
+        self.CONSTANTS: dict[str, ConstantFunc] = Tree.CONSTANTS
 
         self.repr_ = repr_
         self.depth = tree_depth(Tree.FUNCTIONS)(repr_)
-        self.fitness = None
-        self.test_fitness = None
+        self.fitness: torch.Tensor | None = None
+        self.test_fitness: torch.Tensor | None = None
         self.node_count = len(list(flatten(self.repr_)))
 
-    def apply_tree(self, inputs: torch.Tensor):
+    def apply_tree(self, inputs: torch.Tensor) -> torch.Tensor:
         """
         Evaluates the tree on input vectors.
 
@@ -113,8 +113,8 @@ class Tree:
         X: torch.Tensor,
         y: torch.Tensor,
         *,
-        testing=False,
-        new_data=False,
+        testing: bool = False,
+        new_data: bool = False,
     ) -> float | None:
         """
         Evaluates the tree given a fitness function, input data (X), and target data (y).

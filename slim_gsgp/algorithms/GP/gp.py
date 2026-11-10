@@ -19,12 +19,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""
-Genetic Programming (GP) module.
-"""
+"""Genetic Programming (GP) module."""
 
 import random
 import time
+from collections.abc import Callable
 
 import numpy as np
 import torch
@@ -38,6 +37,7 @@ from slim_gsgp.config.types import (
     GPPiInit,
     InitializerFunc,
     MutatorFunc,
+    TreeSelector,
 )
 from slim_gsgp.utils.diversity import niche_entropy
 from slim_gsgp.utils.logger import logger
@@ -49,7 +49,7 @@ class GP:
         self,
         pi_init: GPPiInit,
         initializer: InitializerFunc,
-        selector,
+        selector: TreeSelector,
         mutator: MutatorFunc,
         crossover: XOFunc,
         find_elit_func: FindEliteFunc,
@@ -89,7 +89,7 @@ class GP:
             Additional settings dictionary.
 
         """
-        self.pi_init = pi_init
+        self.pi_init: GPPiInit = pi_init
         self.selector = selector
         self.p_m = p_m
         self.crossover = crossover
@@ -107,23 +107,23 @@ class GP:
 
     def solve(
         self,
-        X_train,
-        X_test,
-        y_train,
-        y_test,
-        curr_dataset,
-        n_iter=20,
-        elitism=True,
-        log=0,
-        verbose=0,
-        test_elite=False,
-        log_path=None,
-        run_info=None,
-        max_depth=None,
+        X_train: torch.Tensor,
+        X_test: torch.Tensor,
+        y_train: torch.Tensor,
+        y_test: torch.Tensor,
+        curr_dataset: str,
+        n_iter: int = 20,
+        elitism: bool = True,
+        log: int = 0,
+        verbose: int = 0,
+        test_elite: bool = False,
+        log_path: str | None = None,
+        run_info: list | None = None,
+        max_depth: int | None = None,
         ffunction: FitnessFunc | None = None,
-        n_elites=1,
-        depth_calculator=None,
-        n_jobs=1,
+        n_elites: int = 1,
+        depth_calculator: Callable | None = None,
+        n_jobs: int = 1,
     ):
         """
         Execute the Genetic Programming algorithm.
@@ -205,7 +205,7 @@ class GP:
         # displaying the results on console if verbose level is not 0
         if verbose != 0:
             verbose_reporter(
-                curr_dataset.split("load_")[-1],
+                curr_dataset.rsplit("load_", maxsplit=1)[-1],
                 0,
                 self.elite.fitness,
                 self.elite.test_fitness,
@@ -262,14 +262,14 @@ class GP:
 
     def evolve_population(
         self,
-        population,
+        population: Population,
         ffunction: FitnessFunc,
-        max_depth,
-        depth_calculator,
-        elitism,
-        X_train,
-        y_train,
-        n_jobs=1,
+        max_depth: int,
+        depth_calculator: Callable,
+        elitism: bool,
+        X_train: torch.Tensor,
+        y_train: torch.Tensor,
+        n_jobs: int = 1,
     ):
         """
         Evolve the population for one iteration (generation).

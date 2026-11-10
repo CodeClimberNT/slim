@@ -27,6 +27,7 @@ from joblib import Parallel, delayed
 from slim_gsgp.algorithms.GP.representations.tree import Tree
 from slim_gsgp.algorithms.GP.representations.tree_utils import _execute_tree
 from slim_gsgp.config.types import FitnessFunc
+from slim_gsgp.evaluators.fitness_functions import se
 
 
 class Population:
@@ -54,6 +55,8 @@ class Population:
         X: torch.Tensor,
         y: torch.Tensor,
         n_jobs: int = 1,
+        *,
+        create_matrix: bool = True,
     ) -> None:
         """
         Evaluates the population given a certain fitness function, input data (X), and target data (y).
@@ -73,7 +76,7 @@ class Population:
 
         """
         # Evaluates individuals' semantics
-        y_pred = Parallel(n_jobs=n_jobs)(
+        y_pred: list[torch.Tensor] = Parallel(n_jobs=n_jobs)(
             delayed(_execute_tree)(
                 individual.repr_,
                 X,
@@ -83,8 +86,26 @@ class Population:
             )
             for individual in self.population
         )
+
         # Evaluate fitnesses
-        self.fit = [ffunction(y, y_pred_ind) for y_pred_ind in y_pred]
+        self.fit: list[torch.Tensor] = [
+            ffunction(y, y_pred_ind) for y_pred_ind in y_pred
+        ]
+
+        # Create matrix M of square errors
+        # Each column is a specific row of the dataset
+        # Each row is an individual of the population
+        if create_matrix:
+            # TODO: ASSUMPTION -> The list stays ordered!
+            M = torch.stack(y_pred, dim=0)
+            for row in range(M.size()[0]):
+                if ffunction(y, M[row]) != self.fit[row]:
+                    print("PROBLEM")
+                # TODO:HERE! Matrix done
+
+            self.fitness_case_column = [
+                ffunction(y, y_pred_ind) for y_pred_ind in y_pred
+            ]
 
         # Assign individuals' fitness
         for i, f in enumerate(self.fit):

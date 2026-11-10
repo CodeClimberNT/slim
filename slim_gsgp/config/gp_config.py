@@ -47,7 +47,7 @@ from slim_gsgp.selection.selection_algorithms import tournament_selection_min
 from slim_gsgp.utils.utils import protected_div
 
 # Define functions and constants
-FUNCTIONS: dict[str, FunctionDef] = {
+FUNCTIONS: FunctionDef = {
     "add": {"function": torch.add, "arity": 2},
     "subtract": {"function": torch.sub, "arity": 2},
     "multiply": {"function": torch.mul, "arity": 2},

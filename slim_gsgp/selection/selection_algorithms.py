@@ -24,14 +24,12 @@ Selection operator implementation.
 """
 
 import random
-from collections.abc import Callable
 
 import numpy as np
 
 from slim_gsgp.algorithms.GP.representations.population import Population
 from slim_gsgp.algorithms.GP.representations.tree import Tree
-
-type TreeSelector = Callable[[Population], Tree]
+from slim_gsgp.config.types import TreeSelector
 
 
 def tournament_selection_min(pool_size) -> TreeSelector:
@@ -87,7 +85,7 @@ def tournament_selection_min(pool_size) -> TreeSelector:
     return ts
 
 
-def tournament_selection_max(pool_size: int) -> Callable:
+def tournament_selection_max(pool_size: int) -> TreeSelector:
     """
     Returns a function that performs tournament selection to select an individual with the highest fitness from a
     population.

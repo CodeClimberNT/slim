@@ -10,10 +10,17 @@ if TYPE_CHECKING:
 
     from slim_gsgp.algorithms.GP.representations.population import Population
     from slim_gsgp.algorithms.GP.representations.tree import Tree
-    from slim_gsgp.selection.selection_algorithms import TreeSelector
 
-type FunctionType = Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
-type FunctionDef = dict[str, FunctionType | int]
+
+# type FunctionType = Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
+
+
+class FunctionType(TypedDict):
+    function: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
+    arity: int
+
+
+type FunctionDef = dict[str, FunctionType]
 type XOFunc = Callable[[tuple, tuple, int, int], tuple]
 
 type ConstantFunc = Callable[[], torch.Tensor]
@@ -22,7 +29,7 @@ type InitializerFunc = Callable[
     [
         int,
         int,
-        dict[str, FunctionType],
+        FunctionDef,
         dict[str, int],
         dict[str, ConstantFunc],
         float,
@@ -32,6 +39,7 @@ type InitializerFunc = Callable[
 type MutatorFunc = Callable[[tuple | str, int | None], tuple | str]
 type FindEliteFunc = Callable[[Population, int], tuple[list[Tree], Tree]]
 type DepthFunc = Callable[[tuple | str], int]
+type TreeSelector = Callable[[Population], Tree]
 
 
 class GPSolveParameters(TypedDict):
@@ -63,7 +71,7 @@ class GPParameters(TypedDict):
 
 
 class GPPiInit(TypedDict):
-    FUNCTIONS: dict[str, dict[str, FunctionType | int]]
+    FUNCTIONS: FunctionDef
     CONSTANTS: dict[str, ConstantFunc]
     TERMINALS: NotRequired[dict[str, int]]
     p_c: float

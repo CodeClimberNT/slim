@@ -30,7 +30,7 @@ import torch
 from slim_gsgp.config.types import ConstantFunc, DepthFunc, FunctionDef
 
 
-def bound_value(vector, min_val, max_val):
+def bound_value(vector: torch.Tensor, min_val: float, max_val: float) -> torch.Tensor:
     """
     Constrains the values within a specific range.
 
@@ -76,7 +76,7 @@ def flatten(data: tuple[Any] | tuple[tuple[Any]]):
 
 def create_grow_random_tree(
     depth,
-    FUNCTIONS: dict[str, FunctionDef],
+    FUNCTIONS: FunctionDef,
     TERMINALS: dict[str, int],
     CONSTANTS: dict[str, ConstantFunc],
     p_c: float = 0.3,
@@ -164,7 +164,7 @@ def create_grow_random_tree(
 
 def create_full_random_tree(
     depth,
-    FUNCTIONS: dict[str, FunctionDef],
+    FUNCTIONS: FunctionDef,
     TERMINALS: dict[str, int],
     CONSTANTS: dict[str, ConstantFunc],
     p_c: float | None = 0.3,
@@ -234,7 +234,7 @@ def create_full_random_tree(
     return node
 
 
-def random_subtree(FUNCTIONS: dict[str, FunctionDef]):
+def random_subtree(FUNCTIONS: FunctionDef):
     """
     Creates a function that selects a random subtree from a given tree representation.
 
@@ -349,7 +349,7 @@ def random_subtree(FUNCTIONS: dict[str, FunctionDef]):
     return random_subtree_picker
 
 
-def substitute_subtree(FUNCTIONS: dict[str, FunctionDef]):
+def substitute_subtree(FUNCTIONS: FunctionDef):
     """
     Generates a function that substitutes a specific subtree in a tree representation with a new subtree.
 
@@ -439,7 +439,7 @@ def substitute_subtree(FUNCTIONS: dict[str, FunctionDef]):
 def tree_pruning(
     TERMINALS: dict[str, int],
     CONSTANTS: dict[str, ConstantFunc],
-    FUNCTIONS: dict[str, FunctionDef],
+    FUNCTIONS: FunctionDef,
     p_c: float | None = 0.3,
 ):
     """
@@ -519,7 +519,7 @@ def tree_pruning(
     return pruning
 
 
-def tree_depth(FUNCTIONS: dict[str, FunctionDef]) -> DepthFunc:
+def tree_depth(FUNCTIONS: FunctionDef) -> DepthFunc:
     """
     Generates a function that calculates the depth of a given tree representation.
 
@@ -580,12 +580,12 @@ def tree_depth(FUNCTIONS: dict[str, FunctionDef]) -> DepthFunc:
 
 
 def _execute_tree(
-    repr_: tuple | list,
+    repr_: torch.Tensor,
     X: torch.Tensor,
-    FUNCTIONS: dict[str, FunctionDef],
+    FUNCTIONS: FunctionDef,
     TERMINALS: dict[str, int],
-    CONSTANTS: dict[str, ConstantFunc],
-) -> float:
+    CONSTANTS: dict[str | torch.Tensor, ConstantFunc],
+) -> torch.Tensor:
     """
     Evaluates a tree genotype on input vectors.
 
@@ -635,7 +635,7 @@ def _execute_tree(
                 TERMINALS,
                 CONSTANTS,
             )  # equivalent to Tree(right_subtree).apply_tree(inputs) if no parallelization were used
-            output = FUNCTIONS[function_name]["function"](
+            output: torch.Tensor = FUNCTIONS[function_name]["function"](
                 left_result,
                 right_result,
             )

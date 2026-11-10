@@ -29,7 +29,7 @@ from slim_gsgp.algorithms.GP.representations.tree_utils import (
 from slim_gsgp.config.types import FunctionDef, XOFunc
 
 
-def crossover_trees(FUNCTIONS: dict[str, FunctionDef]) -> XOFunc:
+def crossover_trees(FUNCTIONS: FunctionDef) -> XOFunc:
     """
     Returns a function that performs crossover between two tree representations.
 
