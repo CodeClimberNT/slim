@@ -19,6 +19,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from __future__ import annotations
+
 import torch
 from scipy.stats import entropy
 
@@ -38,12 +40,13 @@ def niche_entropy(repr_, n_niches=10):
     -------
     float
         The entropy of the distribution of individuals across niches.
+
     Notes
     -----
     https://www.semanticscholar.org/paper/Entropy-Driven-Adaptive-RoscaComputer/ab5c8a8f415f79c5ec6ff6281ed7113736615682
     https://strathprints.strath.ac.uk/76488/1/Marchetti_etal_Springer_2021_Inclusive_genetic_programming.pdf
-    """
 
+    """
     num_nodes = [len(ind) - 1 for ind in repr_]
     min_ = min(num_nodes)
     max_ = max(num_nodes)
@@ -75,9 +78,11 @@ def gsgp_pop_div_from_vectors(sem_vectors):
     -------
     float
         The average pairwise distance between semantic vectors.
+
     Notes
     -----
     https://ieeexplore.ieee.org/document/9283096
+
     """
     return torch.sum(torch.cdist(sem_vectors, sem_vectors)) / (
         sem_vectors.shape[0] ** 2

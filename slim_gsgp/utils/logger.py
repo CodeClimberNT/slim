@@ -19,15 +19,26 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from __future__ import annotations
+
 import csv
-import os.path
 from copy import copy
-from uuid import UUID
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
+if TYPE_CHECKING:
+    from uuid import UUID
 
-def log_settings(path: str, settings_dict: list, unique_run_id: UUID) -> None:
+    from slim_gsgp.config.types import GPParameters, GPPiInit, GPSolveParameters
+
+
+def log_settings(
+    path: str,
+    settings: tuple[GPSolveParameters, GPParameters, GPPiInit, dict[str, float]],
+    unique_run_id: UUID,
+) -> None:
     """
     Log the settings to a CSV file.
 
@@ -35,26 +46,28 @@ def log_settings(path: str, settings_dict: list, unique_run_id: UUID) -> None:
     ----------
     path : str
         Path to the CSV file.
-    settings_dict : list
+    settings : list[dict]
         Dictionary of settings.
     unique_run_id : UUID
         Unique identifier for the run.
 
-    Returns
-    -------
-    None
     """
-    settings_dict = merge_settings(*settings_dict)
+    settings_dict = merge_settings(*settings)
     del settings_dict["TERMINALS"]
 
     infos = [unique_run_id, settings_dict]
 
-    with open(path, "a", newline="") as file:
+    with Path(path).open("a", encoding="utf-8", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(infos)
 
 
-def merge_settings(sd1: dict, sd2: dict, sd3: dict, sd4: dict) -> dict:
+def merge_settings(
+    sd1: GPSolveParameters,
+    sd2: GPParameters,
+    sd3: GPPiInit,
+    sd4: dict[str, float],
+) -> dict[str, GPSolveParameters | GPParameters | GPPiInit | float]:
     """
     Merge multiple settings dictionaries into one.
 
@@ -73,6 +86,7 @@ def merge_settings(sd1: dict, sd2: dict, sd3: dict, sd4: dict) -> dict:
     -------
     dict
         Merged settings dictionary.
+
     """
     return {**sd1, **sd2, **sd3, **sd4}
 
@@ -83,8 +97,8 @@ def logger(
     elite_fit: float,
     timing: float,
     nodes: int,
-    additional_infos: list = None,
-    run_info: list = None,
+    additional_infos: list | None = None,
+    run_info: list | None = None,
     seed: int = 0,
 ) -> None:
     """
@@ -109,13 +123,10 @@ def logger(
     seed : int, optional
         The seed used in random, numpy, and torch libraries. Defaults to 0.
 
-    Returns
-    -------
-    None
     """
-    if not os.path.isdir(os.path.dirname(path)):
-        os.mkdir(os.path.dirname(path))
-    with open(path, "a", newline="") as file:
+    if not Path(Path(path).parent).is_dir():
+        Path(Path(path).parent).mkdir()
+    with Path(path).open("a", encoding="utf-8", newline="") as file:
         writer = csv.writer(file)
         infos = copy(run_info) if run_info is not None else []
         infos.extend([seed, generation, float(elite_fit), timing, nodes])
@@ -130,7 +141,7 @@ def logger(
         writer.writerow(infos)
 
 
-def drop_experiment_from_logger(experiment_id: str or int, log_path: str) -> None:
+def drop_experiment_from_logger(experiment_id: str | int, log_path: str) -> None:
     """
     Remove an experiment from the logger CSV file. If the given experiment_id is -1, the last saved experiment is removed.
 
@@ -141,9 +152,6 @@ def drop_experiment_from_logger(experiment_id: str or int, log_path: str) -> Non
     log_path : str
         Path to the file containing the logging information.
 
-    Returns
-    -------
-    None
     """
     logger_data = pd.read_csv(log_path)
 

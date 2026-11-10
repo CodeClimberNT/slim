@@ -28,17 +28,18 @@ import time
 
 import numpy as np
 import torch
+
 from slim_gsgp.algorithms.GP.representations.tree import Tree as GP_Tree
 from slim_gsgp.algorithms.GSGP.representations.tree import Tree
 from slim_gsgp.algorithms.SLIM_GSGP.representations.individual import Individual
 from slim_gsgp.algorithms.SLIM_GSGP.representations.population import Population
+from slim_gsgp.config.types import FitnessFunc
 from slim_gsgp.utils.diversity import gsgp_pop_div_from_vectors
 from slim_gsgp.utils.logger import logger
 from slim_gsgp.utils.utils import verbose_reporter
 
 
 class SLIM_GSGP:
-
     def __init__(
         self,
         pi_init,
@@ -144,11 +145,12 @@ class SLIM_GSGP:
         verbose=0,
         test_elite=False,
         log_path=None,
-        ffunction=None,
+        ffunction: FitnessFunc | None = None,
         max_depth=17,
         n_elites=1,
         reconstruct=True,
-        n_jobs=1):
+        n_jobs=1,
+    ):
         """
         Solve the optimization problem using SLIM_GSGP.
 
@@ -190,9 +192,8 @@ class SLIM_GSGP:
             Maximum number of concurrently running jobs for joblib parallelization. Default is 1.
 
         """
-
         if test_elite and (X_test is None or y_test is None):
-            raise Exception('If test_elite is True you need to provide a test dataset')
+            raise Exception("If test_elite is True you need to provide a test dataset")
 
         # setting the seeds
         torch.manual_seed(self.seed)
@@ -212,14 +213,14 @@ class SLIM_GSGP:
                             train_semantics=None,
                             test_semantics=None,
                             reconstruct=True,
-                        )
+                        ),
                     ],
                     train_semantics=None,
                     test_semantics=None,
                     reconstruct=True,
                 )
                 for tree in self.initializer(**self.pi_init)
-            ]
+            ],
         )
 
         # calculating initial population semantics
@@ -237,7 +238,10 @@ class SLIM_GSGP:
         if test_elite:
             population.calculate_semantics(X_test, testing=True)
             self.elite.evaluate(
-                ffunction, y=y_test, testing=True, operator=self.operator
+                ffunction,
+                y=y_test,
+                testing=True,
+                operator=self.operator,
             )
 
         # logging the results based on the log level
@@ -249,7 +253,7 @@ class SLIM_GSGP:
                             [
                                 torch.sum(ind.train_semantics, dim=0)
                                 for ind in population.population
-                            ]
+                            ],
                         ),
                     )
                     if self.operator == "sum"
@@ -258,8 +262,8 @@ class SLIM_GSGP:
                             [
                                 torch.prod(ind.train_semantics, dim=0)
                                 for ind in population.population
-                            ]
-                        )
+                            ],
+                        ),
                     )
                 )
                 add_info = [
@@ -286,7 +290,7 @@ class SLIM_GSGP:
                             [
                                 torch.sum(ind.train_semantics, dim=0)
                                 for ind in population.population
-                            ]
+                            ],
                         ),
                     )
                     if self.operator == "sum"
@@ -295,8 +299,8 @@ class SLIM_GSGP:
                             [
                                 torch.prod(ind.train_semantics, dim=0)
                                 for ind in population.population
-                            ]
-                        )
+                            ],
+                        ),
                     )
                 )
                 add_info = [
@@ -310,7 +314,6 @@ class SLIM_GSGP:
                 ]
 
             else:
-
                 add_info = [self.elite.test_fitness, self.elite.nodes_count, log]
 
             logger(
@@ -346,20 +349,17 @@ class SLIM_GSGP:
 
             # filling the offspring population
             while len(offs_pop) < self.pop_size:
-
                 # choosing between crossover and mutation
 
                 if random.random() < self.p_xo:
-
                     p1, p2 = self.selector(population), self.selector(population)
                     while p1 == p2:
                         # choosing parents
                         p1, p2 = self.selector(population), self.selector(population)
-                    pass  # future work on slim_gsgp implementations should invent crossover
+                    # future work on slim_gsgp implementations should invent crossover
                 else:
                     # so, mutation was selected. Now deflation or inflation is selected.
                     if random.random() < self.p_deflate:
-
                         # selecting the parent to deflate
                         p1 = self.selector(population)
 
@@ -405,7 +405,6 @@ class SLIM_GSGP:
 
                     # inflation mutation was selected
                     else:
-
                         # selecting a parent to inflate
                         p1 = self.selector(population)
 
@@ -484,7 +483,6 @@ class SLIM_GSGP:
 
             # removing any excess individuals from the offspring population
             if len(offs_pop) > population.size:
-
                 offs_pop = offs_pop[: population.size]
 
             # turning the offspring population into a Population
@@ -493,7 +491,12 @@ class SLIM_GSGP:
             offs_pop.calculate_semantics(X_train)
 
             # evaluating the offspring population
-            offs_pop.evaluate(ffunction, y=y_train, operator=self.operator, n_jobs=n_jobs)
+            offs_pop.evaluate(
+                ffunction,
+                y=y_train,
+                operator=self.operator,
+                n_jobs=n_jobs,
+            )
 
             # replacing the current population with the offspring population P = P'
             population = offs_pop
@@ -508,12 +511,14 @@ class SLIM_GSGP:
             if test_elite:
                 self.elite.calculate_semantics(X_test, testing=True)
                 self.elite.evaluate(
-                    ffunction, y=y_test, testing=True, operator=self.operator
+                    ffunction,
+                    y=y_test,
+                    testing=True,
+                    operator=self.operator,
                 )
 
             # logging the results based on the log level
             if log != 0:
-
                 if log == 2:
                     gen_diversity = (
                         gsgp_pop_div_from_vectors(
@@ -521,7 +526,7 @@ class SLIM_GSGP:
                                 [
                                     torch.sum(ind.train_semantics, dim=0)
                                     for ind in population.population
-                                ]
+                                ],
                             ),
                         )
                         if self.operator == "sum"
@@ -530,8 +535,8 @@ class SLIM_GSGP:
                                 [
                                     torch.prod(ind.train_semantics, dim=0)
                                     for ind in population.population
-                                ]
-                            )
+                                ],
+                            ),
                         )
                     )
                     add_info = [
@@ -547,7 +552,7 @@ class SLIM_GSGP:
                         self.elite.test_fitness,
                         self.elite.nodes_count,
                         " ".join(
-                            [str(ind.nodes_count) for ind in population.population]
+                            [str(ind.nodes_count) for ind in population.population],
                         ),
                         " ".join([str(f) for f in population.fit]),
                         log,
@@ -560,7 +565,7 @@ class SLIM_GSGP:
                                 [
                                     torch.sum(ind.train_semantics, dim=0)
                                     for ind in population.population
-                                ]
+                                ],
                             ),
                         )
                         if self.operator == "sum"
@@ -569,8 +574,8 @@ class SLIM_GSGP:
                                 [
                                     torch.prod(ind.train_semantics, dim=0)
                                     for ind in population.population
-                                ]
-                            )
+                                ],
+                            ),
                         )
                     )
                     add_info = [
@@ -579,7 +584,7 @@ class SLIM_GSGP:
                         float(gen_diversity),
                         np.std(population.fit),
                         " ".join(
-                            [str(ind.nodes_count) for ind in population.population]
+                            [str(ind.nodes_count) for ind in population.population],
                         ),
                         " ".join([str(f) for f in population.fit]),
                         log,

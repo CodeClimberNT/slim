@@ -19,9 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""
-This module provides various error metrics functions for evaluating machine learning models.
-"""
+"""Provides various error metrics functions for evaluating machine learning models."""
 
 import torch
 
@@ -41,8 +39,19 @@ def rmse(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     -------
     torch.Tensor
         RMSE value.
+
     """
-    return torch.sqrt(torch.mean(torch.square(torch.sub(y_true, y_pred)), dim=len(y_pred.shape) - 1))
+    return torch.sqrt(
+        torch.mean(
+            torch.square(
+                torch.sub(
+                    y_true,
+                    y_pred,
+                )
+            ),
+            dim=len(y_pred.shape) - 1,
+        ),
+    )
 
 
 def mse(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
@@ -60,8 +69,12 @@ def mse(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     -------
     torch.Tensor
         MSE value.
+
     """
-    return torch.mean(torch.square(torch.sub(y_true, y_pred)), dim=len(y_pred.shape) - 1)
+    return torch.mean(
+        torch.square(torch.sub(y_true, y_pred)),
+        dim=len(y_pred.shape) - 1,
+    )
 
 
 def mae(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
@@ -79,6 +92,7 @@ def mae(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     -------
     torch.Tensor
         MAE value.
+
     """
     return torch.mean(torch.abs(torch.sub(y_true, y_pred)), dim=len(y_pred.shape) - 1)
 
@@ -98,8 +112,12 @@ def mae_int(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     -------
     torch.Tensor
         MAE value for integer predictions.
+
     """
-    return torch.mean(torch.abs(torch.sub(y_true, torch.round(y_pred))), dim=len(y_pred.shape) - 1)
+    return torch.mean(
+        torch.abs(torch.sub(y_true, torch.round(y_pred))),
+        dim=len(y_pred.shape) - 1,
+    )
 
 
 def signed_errors(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
@@ -117,8 +135,10 @@ def signed_errors(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     -------
     torch.Tensor
         Signed error values.
+
     """
     return torch.sub(y_true, y_pred)
+
 
 def r2_score(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     """
@@ -137,6 +157,7 @@ def r2_score(y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     -------
     torch.Tensor
         R² score value.
+
     """
     ss_res = torch.sum(torch.square(y_true - y_pred))
     ss_tot = torch.sum(torch.square(y_true - torch.mean(y_true)))

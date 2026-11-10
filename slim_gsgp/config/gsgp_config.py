@@ -19,32 +19,41 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""
-This script sets up the configuration dictionaries for the execution of the GSGP algorithm
-"""
+"""Set up the configuration dictionaries for the execution of the GSGP algorithm."""
+
+from functools import partial
+
 import torch
-from slim_gsgp.initializers.initializers import rhh, grow, full
-from slim_gsgp.selection.selection_algorithms import tournament_selection_min, tournament_selection_max
 
 from slim_gsgp.algorithms.GSGP.operators.crossover_operators import geometric_crossover
 from slim_gsgp.algorithms.GSGP.operators.mutators import standard_geometric_mutation
-from slim_gsgp.evaluators.fitness_functions import *
-from slim_gsgp.utils.utils import (get_best_min, get_best_max,
-                                   protected_div)
+from slim_gsgp.config.types import ConstantFunc
+from slim_gsgp.evaluators.fitness_functions import (
+    mae,
+    mae_int,
+    mse,
+    rmse,
+    signed_errors,
+)
+from slim_gsgp.initializers.initializers import full, grow, rhh
+from slim_gsgp.selection.selection_algorithms import (
+    tournament_selection_min,
+)
+from slim_gsgp.utils.utils import get_best_min, protected_div
 
 FUNCTIONS = {
-    'add': {'function': torch.add, 'arity': 2},
-    'subtract': {'function': torch.sub, 'arity': 2},
-    'multiply': {'function': torch.mul, 'arity': 2},
-    'divide': {'function': protected_div, 'arity': 2}
+    "add": {"function": torch.add, "arity": 2},
+    "subtract": {"function": torch.sub, "arity": 2},
+    "multiply": {"function": torch.mul, "arity": 2},
+    "divide": {"function": protected_div, "arity": 2},
 }
 
-CONSTANTS = {
-    'constant_2': lambda _: torch.tensor(2.0),
-    'constant_3': lambda _: torch.tensor(3.0),
-    'constant_4': lambda _: torch.tensor(4.0),
-    'constant_5': lambda _: torch.tensor(5.0),
-    'constant__1': lambda _: torch.tensor(-1.0)
+CONSTANTS: dict[str, ConstantFunc] = {
+    "constant_2": partial(torch.tensor, 2.0),
+    "constant_3": partial(torch.tensor, 3.0),
+    "constant_4": partial(torch.tensor, 4.0),
+    "constant_5": partial(torch.tensor, 5.0),
+    "constant__1": partial(torch.tensor, -1.0),
 }
 
 # Set parameters
@@ -61,7 +70,7 @@ gsgp_solve_parameters = {
     "log": 1,
     "verbose": 1,
     "ffunction": "rmse",
-    "test_elite": True
+    "test_elite": True,
 }
 
 # GSGP parameters
@@ -74,14 +83,14 @@ gsgp_parameters = {
     "pop_size": 100,
     "p_xo": 0.0,
     "seed": 74,
-    "initializer": "rhh"
+    "initializer": "rhh",
 }
 
 gsgp_pi_init = {
-    'FUNCTIONS': FUNCTIONS,
-    'CONSTANTS': CONSTANTS,
+    "FUNCTIONS": FUNCTIONS,
+    "CONSTANTS": CONSTANTS,
     "p_c": 0.2,
-    "init_depth": 8
+    "init_depth": 8,
 }
 
 fitness_function_options = {
@@ -89,11 +98,11 @@ fitness_function_options = {
     "mse": mse,
     "mae": mae,
     "mae_int": mae_int,
-    "signed_errors": signed_errors
+    "signed_errors": signed_errors,
 }
 
 initializer_options = {
     "rhh": rhh,
     "grow": grow,
-    "full": full
+    "full": full,
 }

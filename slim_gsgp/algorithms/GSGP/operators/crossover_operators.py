@@ -49,10 +49,12 @@ def geometric_crossover(tree1, tree2, random_tree, testing, new_data=False):
     new_data : bool
         Flag indicating whether the trees are exposed to new data, outside the evolution process. In this case,
         operations are performed on the inputs rather than semantics.
+
     Returns
     -------
     torch.Tensor
         The semantics of the individual, resulting from geometric crossover.
+
     """
     # if new (testing) data is used (for the testing of the final tree), return the semantics resulting from crossover
     if new_data:
@@ -62,14 +64,12 @@ def geometric_crossover(tree1, tree2, random_tree, testing, new_data=False):
         )
     # if new_data is false, geomettric_crossover is being called during GSGP's training phase, tree.test_semantics or
     # tree.train_semantics attribute is used
-    else:
-        if testing:
-            return torch.add(
-                torch.mul(tree1.test_semantics, random_tree.test_semantics),
-                torch.mul(torch.sub(1, random_tree.test_semantics), tree2.test_semantics),
-            )
-        else:
-            return torch.add(
-                torch.mul(tree1.train_semantics, random_tree.train_semantics),
-                torch.mul(torch.sub(1, random_tree.train_semantics), tree2.train_semantics),
-            )
+    if testing:
+        return torch.add(
+            torch.mul(tree1.test_semantics, random_tree.test_semantics),
+            torch.mul(torch.sub(1, random_tree.test_semantics), tree2.test_semantics),
+        )
+    return torch.add(
+        torch.mul(tree1.train_semantics, random_tree.train_semantics),
+        torch.mul(torch.sub(1, random_tree.train_semantics), tree2.train_semantics),
+    )

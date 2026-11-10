@@ -26,6 +26,7 @@ Mutation Functions for SLIM GSGP.
 import random
 
 import torch
+
 from slim_gsgp.algorithms.GSGP.representations.tree import Tree
 from slim_gsgp.algorithms.SLIM_GSGP.representations.individual import Individual
 from slim_gsgp.utils.utils import get_random_tree
@@ -46,8 +47,8 @@ def two_trees_delta(operator="sum"):
     Callable
         A mutation function (`tt_delta`) for two Individuals that returns the mutated semantics.
 
-        Parameters
-        ----------
+    Parameters
+    ----------
         tr1 : Individual
             The first tree individual.
         tr2 : Individual
@@ -57,8 +58,8 @@ def two_trees_delta(operator="sum"):
         testing : bool
             Flag to indicate whether to use test or train Individual semantics.
 
-        Returns
-        -------
+    Returns
+    -------
         torch.Tensor
             The mutated semantics.
 
@@ -66,6 +67,7 @@ def two_trees_delta(operator="sum"):
     -----
     The returned function ('tt_delta_{operator}') takes as input two individuals, the mutation step, a boolean
     representing whether to use the train or test semantics, and returns the calculated semantics of the new individual.
+
     """
 
     def tt_delta(tr1, tr2, ms, testing):
@@ -87,25 +89,26 @@ def two_trees_delta(operator="sum"):
         -------
         torch.Tensor
             The mutated semantics.
+
         """
         if testing:
             return (
                 torch.mul(ms, torch.sub(tr1.test_semantics, tr2.test_semantics))
                 if operator == "sum"
                 else torch.add(
-                    1, torch.mul(ms, torch.sub(tr1.test_semantics, tr2.test_semantics))
+                    1,
+                    torch.mul(ms, torch.sub(tr1.test_semantics, tr2.test_semantics)),
                 )
             )
 
-        else:
-            return (
-                torch.mul(ms, torch.sub(tr1.train_semantics, tr2.train_semantics))
-                if operator == "sum"
-                else torch.add(
-                    1,
-                    torch.mul(ms, torch.sub(tr1.train_semantics, tr2.train_semantics)),
-                )
+        return (
+            torch.mul(ms, torch.sub(tr1.train_semantics, tr2.train_semantics))
+            if operator == "sum"
+            else torch.add(
+                1,
+                torch.mul(ms, torch.sub(tr1.train_semantics, tr2.train_semantics)),
             )
+        )
 
     tt_delta.__name__ += "_" + operator
 
@@ -128,8 +131,8 @@ def one_tree_delta(operator="sum", sig=False):
     Callable
         A mutation function (`ot_delta`) for one-tree mutation.
 
-        Parameters
-        ----------
+    Parameters
+    ----------
         tr1 : Individual
             The tree Individual.
         ms : float
@@ -137,15 +140,18 @@ def one_tree_delta(operator="sum", sig=False):
         testing : bool
             Flag to indicate whether to use test or train semantics.
 
-        Returns
-        -------
+    Returns
+    -------
         torch.Tensor
             The mutated semantics.
+
     Notes
     -----
     The returned function ('ot_delta_{operator}_{sig}') takes as input one individual, the mutation step,
     a boolean representing whether to use the train or test semantics, and returns the mutated semantics.
+
     """
+
     def ot_delta(tr1, ms, testing):
         """
         Performs delta mutation on one tree based on its semantics.
@@ -163,6 +169,7 @@ def one_tree_delta(operator="sum", sig=False):
         -------
         torch.Tensor
             The mutated semantics.
+
         """
         if sig:
             if testing:
@@ -170,70 +177,79 @@ def one_tree_delta(operator="sum", sig=False):
                     torch.mul(ms, torch.sub(torch.mul(2, tr1.test_semantics), 1))
                     if operator == "sum"
                     else torch.add(
-                        1, torch.mul(ms, torch.sub(torch.mul(2, tr1.test_semantics), 1))
-                    )
-                )
-            else:
-                return (
-                    torch.mul(ms, torch.sub(torch.mul(2, tr1.train_semantics), 1))
-                    if operator == "sum"
-                    else torch.add(
                         1,
-                        torch.mul(ms, torch.sub(torch.mul(2, tr1.train_semantics), 1)),
+                        torch.mul(ms, torch.sub(torch.mul(2, tr1.test_semantics), 1)),
                     )
                 )
-        else:
-            if testing:
-                return (
-                    torch.mul(
-                        ms,
-                        torch.sub(
-                            1, torch.div(2, torch.add(1, torch.abs(tr1.test_semantics)))
-                        ),
-                    )
-                    if operator == "sum"
-                    else torch.add(
+            return (
+                torch.mul(ms, torch.sub(torch.mul(2, tr1.train_semantics), 1))
+                if operator == "sum"
+                else torch.add(
+                    1,
+                    torch.mul(ms, torch.sub(torch.mul(2, tr1.train_semantics), 1)),
+                )
+            )
+        if testing:
+            return (
+                torch.mul(
+                    ms,
+                    torch.sub(
                         1,
-                        torch.mul(
-                            ms,
-                            torch.sub(
-                                1,
-                                torch.div(
-                                    2, torch.add(1, torch.abs(tr1.test_semantics))
-                                ),
-                            ),
-                        ),
-                    )
+                        torch.div(2, torch.add(1, torch.abs(tr1.test_semantics))),
+                    ),
                 )
-            else:
-                return (
+                if operator == "sum"
+                else torch.add(
+                    1,
                     torch.mul(
                         ms,
                         torch.sub(
                             1,
-                            torch.div(2, torch.add(1, torch.abs(tr1.train_semantics))),
-                        ),
-                    )
-                    if operator == "sum"
-                    else torch.add(
-                        1,
-                        torch.mul(
-                            ms,
-                            torch.sub(
-                                1,
-                                torch.div(
-                                    2, torch.add(1, torch.abs(tr1.train_semantics))
-                                ),
+                            torch.div(
+                                2,
+                                torch.add(1, torch.abs(tr1.test_semantics)),
                             ),
                         ),
-                    )
+                    ),
                 )
+            )
+        return (
+            torch.mul(
+                ms,
+                torch.sub(
+                    1,
+                    torch.div(2, torch.add(1, torch.abs(tr1.train_semantics))),
+                ),
+            )
+            if operator == "sum"
+            else torch.add(
+                1,
+                torch.mul(
+                    ms,
+                    torch.sub(
+                        1,
+                        torch.div(
+                            2,
+                            torch.add(1, torch.abs(tr1.train_semantics)),
+                        ),
+                    ),
+                ),
+            )
+        )
 
     ot_delta.__name__ += "_" + operator + "_" + str(sig)
     return ot_delta
 
 
-def inflate_mutation(FUNCTIONS, TERMINALS,CONSTANTS,two_trees=True,operator="sum",single_tree_sigmoid=False,sig=False):
+def inflate_mutation(
+    FUNCTIONS,
+    TERMINALS,
+    CONSTANTS,
+    two_trees=True,
+    operator="sum",
+    single_tree_sigmoid=False,
+    sig=False,
+):
     """
     Generate an inflate mutation function.
 
@@ -259,8 +275,8 @@ def inflate_mutation(FUNCTIONS, TERMINALS,CONSTANTS,two_trees=True,operator="sum
     Callable
         An inflate mutation function (`inflate`).
 
-        Parameters
-        ----------
+    Parameters
+    ----------
         individual : Individual
             The tree Individual to mutate.
         ms : float
@@ -278,8 +294,8 @@ def inflate_mutation(FUNCTIONS, TERMINALS,CONSTANTS,two_trees=True,operator="sum
         reconstruct : bool, optional
             Whether to reconstruct the Individual's collection after mutation (default: True).
 
-        Returns
-        -------
+    Returns
+    -------
         Individual
             The mutated tree Individual.
 
@@ -287,7 +303,9 @@ def inflate_mutation(FUNCTIONS, TERMINALS,CONSTANTS,two_trees=True,operator="sum
     -----
     The returned function performs inflate mutation on Individuals, using either one or two randomly generated trees
     and applying either delta mutation or sigmoid mutation based on the parameters.
+
     """
+
     def inflate(
         individual,
         ms,
@@ -324,6 +342,7 @@ def inflate_mutation(FUNCTIONS, TERMINALS,CONSTANTS,two_trees=True,operator="sum
         -------
         Individual
             The mutated tree Individual.
+
         """
         if two_trees:
             # getting two random trees
@@ -376,7 +395,9 @@ def inflate_mutation(FUNCTIONS, TERMINALS,CONSTANTS,two_trees=True,operator="sum
             if X_test is not None:
                 [
                     rt.calculate_semantics(
-                        X_test, testing=True, logistic=single_tree_sigmoid or sig
+                        X_test,
+                        testing=True,
+                        logistic=single_tree_sigmoid or sig,
                     )
                     for rt in random_trees
                 ]
@@ -409,7 +430,7 @@ def inflate_mutation(FUNCTIONS, TERMINALS,CONSTANTS,two_trees=True,operator="sum
                         if new_block.train_semantics.shape != torch.Size([])
                         else new_block.train_semantics.repeat(len(X))
                     ),
-                ]
+                ],
             ),
             test_semantics=(
                 (
@@ -421,7 +442,7 @@ def inflate_mutation(FUNCTIONS, TERMINALS,CONSTANTS,two_trees=True,operator="sum
                                 if new_block.test_semantics.shape != torch.Size([])
                                 else new_block.test_semantics.repeat(len(X_test))
                             ),
-                        ]
+                        ],
                     )
                 )
                 if individual.test_semantics is not None
@@ -439,7 +460,7 @@ def inflate_mutation(FUNCTIONS, TERMINALS,CONSTANTS,two_trees=True,operator="sum
             [
                 depth - (i - 1) if i != 0 else depth
                 for i, depth in enumerate(offs.depth_collection)
-            ]
+            ],
         ) + (offs.size - 1)
 
         return offs
@@ -462,6 +483,7 @@ def deflate_mutation(individual, reconstruct):
     -------
     Individual
         The mutated individual
+
     """
     # choosing the block that will be removed
     mut_point = random.randint(1, individual.size - 1)
@@ -480,14 +502,14 @@ def deflate_mutation(individual, reconstruct):
             [
                 *individual.train_semantics[:mut_point],
                 *individual.train_semantics[mut_point + 1 :],
-            ]
+            ],
         ),
         test_semantics=(
             torch.stack(
                 [
                     *individual.test_semantics[:mut_point],
                     *individual.test_semantics[mut_point + 1 :],
-                ]
+                ],
             )
             if individual.test_semantics is not None
             else None
@@ -511,7 +533,7 @@ def deflate_mutation(individual, reconstruct):
         [
             depth - (i - 1) if i != 0 else depth
             for i, depth in enumerate(offs.depth_collection)
-        ]
+        ],
     ) + (offs.size - 1)
 
     return offs

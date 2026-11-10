@@ -28,8 +28,17 @@ import time
 
 import numpy as np
 import torch
+
+from slim_gsgp.algorithms.GP.operators.crossover_operators import XOFunc
 from slim_gsgp.algorithms.GP.representations.population import Population
 from slim_gsgp.algorithms.GP.representations.tree import Tree
+from slim_gsgp.config.types import (
+    FindEliteFunc,
+    FitnessFunc,
+    GPPiInit,
+    InitializerFunc,
+    MutatorFunc,
+)
 from slim_gsgp.utils.diversity import niche_entropy
 from slim_gsgp.utils.logger import logger
 from slim_gsgp.utils.utils import verbose_reporter
@@ -38,17 +47,18 @@ from slim_gsgp.utils.utils import verbose_reporter
 class GP:
     def __init__(
         self,
-        pi_init,
-        initializer,
+        pi_init: GPPiInit,
+        initializer: InitializerFunc,
         selector,
-        mutator,
-        crossover,
-        find_elit_func,
-        p_m=0.2,
-        p_xo=0.8,
-        pop_size=100,
-        seed=0,
-        settings_dict=None,
+        mutator: MutatorFunc,
+        crossover: XOFunc,
+        find_elit_func: FindEliteFunc,
+        *,
+        p_m: float = 0.2,
+        p_xo: float = 0.8,
+        pop_size: int = 100,
+        seed: int = 0,
+        settings_dict: dict | None = None,
     ):
         """
         Initialize the Genetic Programming algorithm.
@@ -77,6 +87,7 @@ class GP:
             Seed for random number generation. Default is 0.
         settings_dict : dict, optional
             Additional settings dictionary.
+
         """
         self.pi_init = pi_init
         self.selector = selector
@@ -109,10 +120,10 @@ class GP:
         log_path=None,
         run_info=None,
         max_depth=None,
-        ffunction=None,
+        ffunction: FitnessFunc | None = None,
         n_elites=1,
         depth_calculator=None,
-        n_jobs = 1
+        n_jobs=1,
     ):
         """
         Execute the Genetic Programming algorithm.
@@ -153,6 +164,7 @@ class GP:
             Function to calculate tree depth. Default is None.
         n_jobs : int, optional
             The number of jobs for parallel processing. Default is 1.
+
         """
         # setting the seeds
         torch.manual_seed(self.seed)
@@ -163,10 +175,10 @@ class GP:
 
         # Initialize the population
         population = Population(
-            [Tree(tree) for tree in self.initializer(**self.pi_init)]
+            [Tree(tree) for tree in self.initializer(**self.pi_init)],
         )
 
-        # evaluating the intial population
+        # evaluating the initial population
         population.evaluate(ffunction, X=X_train, y=y_train, n_jobs=n_jobs)
 
         end = time.time()
@@ -182,8 +194,13 @@ class GP:
 
         if log != 0:
             self.log_generation(
-                    0, population, end - start, log, log_path, run_info
-                )
+                0,
+                population,
+                end - start,
+                log,
+                log_path,
+                run_info,
+            )
 
         # displaying the results on console if verbose level is not 0
         if verbose != 0:
@@ -207,7 +224,7 @@ class GP:
                 elitism,
                 X_train,
                 y_train,
-                n_jobs=n_jobs
+                n_jobs=n_jobs,
             )
             # replacing the population with the offspring population (P = P')
             population = offs_pop
@@ -224,7 +241,12 @@ class GP:
             # logging the results if log != 0
             if log != 0:
                 self.log_generation(
-                    it, population, end - start, log, log_path, run_info
+                    it,
+                    population,
+                    end - start,
+                    log,
+                    log_path,
+                    run_info,
                 )
 
             # displaying the results on console if verbose != 0
@@ -241,13 +263,13 @@ class GP:
     def evolve_population(
         self,
         population,
-        ffunction,
+        ffunction: FitnessFunc,
         max_depth,
         depth_calculator,
         elitism,
         X_train,
         y_train,
-        n_jobs=1
+        n_jobs=1,
     ):
         """
         Evolve the population for one iteration (generation).
@@ -277,6 +299,7 @@ class GP:
             The evolved population after one generation.
         float
             The start time of the evolution process.
+
         """
         # creating an empty offspring population list
         offs_pop = []
@@ -290,7 +313,7 @@ class GP:
         # filling the offspring population
         while len(offs_pop) < self.pop_size:
             # choosing between crossover and mutation
-            if random.random() < self.p_xo: # if crossover is selected
+            if random.random() < self.p_xo:  # if crossover is selected
                 # choose two parents
                 p1, p2 = self.selector(population), self.selector(population)
                 # make sure that the parents are different
@@ -305,9 +328,6 @@ class GP:
                     tree2_n_nodes=p2.node_count,
                 )
 
-                offspring = []
-
-                # assuring the offspring do not exceed max_depth
                 # assuring the offspring do not exceed max_depth
                 if max_depth is not None:
                     offspring = []
@@ -332,9 +352,7 @@ class GP:
                 else:
                     offspring = [offs1, offs2]
 
-
-
-            else: # if mutation was chosen
+            else:  # if mutation was chosen
                 # choosing a parent
                 p1 = self.selector(population)
                 # generating a mutated offspring from the parent
@@ -364,7 +382,13 @@ class GP:
         return offs_pop, start
 
     def log_generation(
-        self, generation, population, elapsed_time, log, log_path, run_info
+        self,
+        generation,
+        population,
+        elapsed_time,
+        log,
+        log_path,
+        run_info,
     ):
         """
         Log the results for the current generation.
@@ -379,6 +403,7 @@ class GP:
 
         Returns:
             None
+
         """
         if log == 2:
             add_info = [

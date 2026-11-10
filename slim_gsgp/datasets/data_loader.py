@@ -20,13 +20,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import os
+from pathlib import Path
 
-import pandas
 import pandas as pd
 import torch
 
-def load_pandas_df(df : pandas.DataFrame, X_y: bool = True):
+DATA_FOLDER: Path = Path(os.path.realpath(__file__)).parent / "data"
+
+
+def load_pandas_df(
+    df: pd.DataFrame,
+    *,
+    X_y: bool = True,
+) -> tuple[torch.Tensor, torch.Tensor] | torch.Tensor:
     """
+    Load Pandas Dataframe into Torch Tensor.
 
     Parameters
     ----------
@@ -40,25 +48,26 @@ def load_pandas_df(df : pandas.DataFrame, X_y: bool = True):
 
     Returns
     -------
-
     tuple or torch.Tensor
         A tuple containing two torch.Tensors (X and the target variable, Y), if X_y is True or a single
         torch.Tensor if X_y is set to False
 
     """
-
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return torch.from_numpy(df.values).float()
+    return torch.from_numpy(df.values).float()
 
 
-def load_resid_build_sale_price(X_y=True):
+def load_resid_build_sale_price(
+    *, X_y: bool = True
+) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
     """
-    Loads and returns the RESIDNAME data set (regression). Taken from https://archive.ics.uci.edu/dataset/437/residential+building+data+set
+    Loads and returns the RESIDNAME data set (regression).
+
+    Taken from https://archive.ics.uci.edu/dataset/437/residential+building+data+set
 
     Parameters
     ----------
@@ -70,23 +79,27 @@ def load_resid_build_sale_price(X_y=True):
     X, y : torch.Tensor, torch.Tensor
         The input data (X) and the target of the prediction (y). The
         latter is extracted from the data set as the last column.
-    df : pandas.DataFrame
-        An object of type pandas.DataFrame which holds the data. The
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
         target is the last column.
+
     """
     df = pd.read_csv(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), "data", "resid_build_sale_price.txt"), sep=" ",
-        header=None
+        DATA_FOLDER / "resid_build_sale_price.txt",
+        sep=" ",
+        header=None,
     )
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return df
+    return df
 
-def load_istanbul(X_y=True):
+
+def load_istanbul(
+    *, X_y: bool = True
+) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
     """
     Loads and returns the Istanbul data set (regression). Taken from https://docs.1010data.com/MachineLearningExamples/IstanbulDataSet.html.
 
@@ -100,29 +113,32 @@ def load_istanbul(X_y=True):
     X, y : torch.Tensor, torch.Tensor
         The input data (X) and the target of the prediction (y). The
         latter is extracted from the data set as the last column.
-    df : pandas.DataFrame
-        An object of type pandas.DataFrame which holds the data. The
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
         target is the last column.
-    """
 
+    """
     df = pd.read_csv(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), "data", "istanbul.txt"), sep=" ",
-        header=None
+        DATA_FOLDER / "istanbul.txt",
+        sep=" ",
+        header=None,
     )
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return df
-
+    return df
 
 
 #   The following functions were Adapted from the GPOL library.
 
-def load_airfoil(X_y=True):
-    """Loads and returns the Airfoil Self-Noise data set (regression)
+
+def load_airfoil(
+    *, X_y: bool = True
+) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
+    """
+    Loads and returns the Airfoil Self-Noise data set (regression).
 
     NASA data set, obtained from a series of aerodynamic and acoustic
     tests of two and three-dimensional airfoil blade sections conducted
@@ -139,15 +155,15 @@ def load_airfoil(X_y=True):
     ----------
     X_y : bool, optional
         Return data as two objects of type torch.Tensor, otherwise as a
-        pandas.DataFrame.
+        pd.DataFrame.
 
     Returns
     -------
     X, y : torch.Tensor, torch.Tensor
         The input data (X) and the target of the prediction (y). The
         latter is extracted from the data set as the last column.
-    df : pandas.DataFrame
-        An object of type pandas.DataFrame which holds the data. The
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
         target is the last column.
 
     References
@@ -155,64 +171,69 @@ def load_airfoil(X_y=True):
     Bakurov, I., Buzzelli, M., Castelli, M., Vanneschi, L., & Schettini, R. (2021). General purpose optimization
     library (GPOL): a flexible and efficient multi-purpose optimization library in Python. Applied Sciences, 11(11),
     4774.
+
+    """
+    df = pd.read_csv(DATA_FOLDER / "airfoil.txt")
+    if X_y:
+        return (
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
+        )
+    return df
+
+
+def load_bike_sharing(
+    *, X_y: bool = True
+) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
+    """
+    Loads and returns the Bike Sharing data set (regression).
+
+    This dataset contains the hourly and daily count of rental bikes between
+    years 2011 and 2012 in Capital bikeshare system with the corresponding
+    weather and seasonal information.
+
+    Basic information:
+    - Number of data instances: 17389;
+    - Number of input features: 13;
+    - Target's range: [22, 8714].
+
+    Parameters
+    ----------
+    X_y : bool, optional
+        Return data as two objects of type torch.Tensor, otherwise as a
+        pd.DataFrame.
+
+    Returns
+    -------
+    X, y : torch.Tensor, torch.Tensor
+        The input data (X) and the target of the prediction (y). The
+        latter is extracted from the data set as the last column.
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
+        target is the last column.
+
+    References
+    ----------
+    https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset
+
     """
     df = pd.read_csv(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), "data", "airfoil.txt")
+        DATA_FOLDER / "bike_sharing_day.txt",
+        index_col=0,
     )
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return df
+    return df
 
 
-def load_bike_sharing(X_y=True):
-    """Loads and returns the Bike Sharing data set (regression)
-
-        This dataset contains the hourly and daily count of rental bikes between
-        years 2011 and 2012 in Capital bikeshare system with the corresponding
-        weather and seasonal information.
-
-        Basic information:
-        - Number of data instances: 17389;
-        - Number of input features: 13;
-        - Target's range: [22, 8714].
-
-        Parameters
-        ----------
-        X_y : bool, optional
-            Return data as two objects of type torch.Tensor, otherwise as a
-            pandas.DataFrame.
-
-        Returns
-        -------
-        X, y : torch.Tensor, torch.Tensor
-            The input data (X) and the target of the prediction (y). The
-            latter is extracted from the data set as the last column.
-        df : pandas.DataFrame
-            An object of type pandas.DataFrame which holds the data. The
-            target is the last column.
-
-        References
-        ----------
-        https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset
-        """
-    df = pd.read_csv(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), "data", "bike_sharing_day.txt"),
-        index_col=0
-    )
-    if X_y:
-        return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
-        )
-    else:
-        return df
-
-def load_boston(X_y=True):
-    """Loads and returns the Boston Housing data set (regression)
+def load_boston(
+    *, X_y: bool = True
+) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
+    """
+    Loads and returns the Boston Housing data set (regression).
 
     This dataset contains information collected by the U.S. Census
     Service concerning housing in the area of Boston Massachusetts.
@@ -228,15 +249,15 @@ def load_boston(X_y=True):
     ----------
     X_y : bool, optional
         Return data as two objects of type torch.Tensor, otherwise as a
-        pandas.DataFrame.
+        pd.DataFrame.
 
     Returns
     -------
     X, y : torch.Tensor, torch.Tensor
         The input data (X) and the target of the prediction (y). The
         latter is extracted from the data set as the last column.
-    df : pandas.DataFrame
-        An object of type pandas.DataFrame which holds the data. The
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
         target is the last column.
 
     References
@@ -244,21 +265,22 @@ def load_boston(X_y=True):
     Bakurov, I., Buzzelli, M., Castelli, M., Vanneschi, L., & Schettini, R. (2021). General purpose optimization
     library (GPOL): a flexible and efficient multi-purpose optimization library in Python. Applied Sciences, 11(11),
     4774.
+
     """
-    df = pd.read_csv(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), "data", "boston.txt")
-    )
+    df = pd.read_csv(DATA_FOLDER / "boston.txt")
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return df
+    return df
 
 
-def load_breast_cancer(X_y=True):
-    """Loads and returns the breast cancer data set (classification)
+def load_breast_cancer(
+    *, X_y: bool = True
+) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
+    """
+    Loads and returns the breast cancer data set (classification).
 
     Breast Cancer Wisconsin (Diagnostic) dataset.
     Downloaded from the StatLib archive.
@@ -273,15 +295,15 @@ def load_breast_cancer(X_y=True):
     ----------
     X_y : bool, optional
         Return data as two objects of type torch.Tensor, otherwise as a
-        pandas.DataFrame.
+        pd.DataFrame.
 
     Returns
     -------
     X, y : torch.Tensor, torch.Tensor
         The input data (X) and the target of the prediction (y). The
         latter is extracted from the data set as the last column.
-    df : pandas.DataFrame
-        An object of type pandas.DataFrame which holds the data. The
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
         target is the last column.
 
     References
@@ -289,23 +311,22 @@ def load_breast_cancer(X_y=True):
     Bakurov, I., Buzzelli, M., Castelli, M., Vanneschi, L., & Schettini, R. (2021). General purpose optimization
     library (GPOL): a flexible and efficient multi-purpose optimization library in Python. Applied Sciences, 11(11),
     4774.
+
     """
-    df = pd.read_csv(
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "data", "breast_cancer.txt"
-        )
-    )
+    df = pd.read_csv(DATA_FOLDER / "breast_cancer.txt")
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return df
+    return df
 
 
-def load_concrete_slump(X_y=True):
-    """Loads and returns the Concrete Slump data set (regression)
+def load_concrete_slump(
+    *, X_y: bool = True
+) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
+    """
+    Loads and returns the Concrete Slump data set (regression).
 
     Concrete is a highly complex material. The slump flow of concrete
     is not only determined by the water content, but that is also
@@ -322,15 +343,15 @@ def load_concrete_slump(X_y=True):
     ----------
     X_y : bool, optional
         Return data as two objects of type torch.Tensor, otherwise as a
-        pandas.DataFrame.
+        pd.DataFrame.
 
     Returns
     -------
     X, y : torch.Tensor, torch.Tensor
         The input data (X) and the target of the prediction (y). The
         latter is extracted from the data set as the last column.
-    df : pandas.DataFrame
-        An object of type pandas.DataFrame which holds the data. The
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
         target is the last column.
 
     References
@@ -338,23 +359,22 @@ def load_concrete_slump(X_y=True):
     Bakurov, I., Buzzelli, M., Castelli, M., Vanneschi, L., & Schettini, R. (2021). General purpose optimization
     library (GPOL): a flexible and efficient multi-purpose optimization library in Python. Applied Sciences, 11(11),
     4774.
+
     """
-    df = pd.read_csv(
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "data", "concrete_slump.txt"
-        )
-    )
+    df = pd.read_csv(DATA_FOLDER / "concrete_slump.txt")
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return df
+    return df
 
 
-def load_concrete_strength(X_y=True):
-    """Loads and returns the Concrete Strength data set (regression)
+def load_concrete_strength(
+    *, X_y: bool = True
+) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
+    """
+    Loads and returns the Concrete Strength data set (regression).
 
     Concrete is the most important material in civil engineering. The
     concrete compressive strength is a highly nonlinear function of
@@ -371,15 +391,15 @@ def load_concrete_strength(X_y=True):
     ----------
     X_y : bool, optional
         Return data as two objects of type torch.Tensor, otherwise as a
-        pandas.DataFrame.
+        pd.DataFrame.
 
     Returns
     -------
     X, y : torch.Tensor, torch.Tensor
         The input data (X) and the target of the prediction (y). The
         latter is extracted from the data set as the last column.
-    df : pandas.DataFrame
-        An object of type pandas.DataFrame which holds the data. The
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
         target is the last column.
 
     References
@@ -387,23 +407,22 @@ def load_concrete_strength(X_y=True):
     Bakurov, I., Buzzelli, M., Castelli, M., Vanneschi, L., & Schettini, R. (2021). General purpose optimization
     library (GPOL): a flexible and efficient multi-purpose optimization library in Python. Applied Sciences, 11(11),
     4774.
+
     """
-    df = pd.read_csv(
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "data", "concrete_strength.txt"
-        )
-    )
+    df = pd.read_csv(DATA_FOLDER / "concrete_strength.txt")
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return df
+    return df
 
 
-def load_diabetes(X_y=True):
-    """Loads and returns the Diabetes data set(regression)
+def load_diabetes(
+    *, X_y: bool = True
+) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
+    """
+    Loads and returns the Diabetes data set(regression).
 
     The file is located in /slim_gsgp/datasets/data/diabetes.txt
 
@@ -416,15 +435,15 @@ def load_diabetes(X_y=True):
     ----------
     X_y : bool, optional
         Return data as two objects of type torch.Tensor, otherwise as a
-        pandas.DataFrame.
+        pd.DataFrame.
 
     Returns
     -------
     X, y : torch.Tensor, torch.Tensor
         The input data (X) and the target of the prediction (y). The
         latter is extracted from the data set as the last column.
-    df : pandas.DataFrame
-        An object of type pandas.DataFrame which holds the data. The
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
         target is the last column.
 
     References
@@ -432,23 +451,22 @@ def load_diabetes(X_y=True):
     Bakurov, I., Buzzelli, M., Castelli, M., Vanneschi, L., & Schettini, R. (2021). General purpose optimization
     library (GPOL): a flexible and efficient multi-purpose optimization library in Python. Applied Sciences, 11(11),
     4774.
+
     """
-    df = pd.read_csv(
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "data", "diabetes.txt"
-        )
-    )
+    df = pd.read_csv(DATA_FOLDER / "diabetes.txt")
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return df
+    return df
 
 
-def load_efficiency_heating(X_y=True):
-    """Loads and returns the Heating Efficiency data set(regression)
+def load_efficiency_heating(
+    *, X_y: bool = True
+) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
+    """
+    Loads and returns the Heating Efficiency data set(regression).
 
     The data set regards heating load assessment of buildings (that is,
     energy efficiency) as a function of building parameters.
@@ -464,15 +482,15 @@ def load_efficiency_heating(X_y=True):
     ----------
     X_y : bool, optional
         Return data as two objects of type torch.Tensor, otherwise as a
-        pandas.DataFrame.
+        pd.DataFrame.
 
     Returns
     -------
     X, y : torch.Tensor, torch.Tensor
         The input data (X) and the target of the prediction (y). The
         latter is extracted from the data set as the last column.
-    df : pandas.DataFrame
-        An object of type pandas.DataFrame which holds the data. The
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
         target is the last column.
 
     References
@@ -480,25 +498,22 @@ def load_efficiency_heating(X_y=True):
     Bakurov, I., Buzzelli, M., Castelli, M., Vanneschi, L., & Schettini, R. (2021). General purpose optimization
     library (GPOL): a flexible and efficient multi-purpose optimization library in Python. Applied Sciences, 11(11),
     4774.
+
     """
-    df = pd.read_csv(
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "data",
-            "efficiency_heating.txt",
-        )
-    )
+    df = pd.read_csv(DATA_FOLDER / "efficiency_heating.txt")
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return df
+    return df
 
 
-def load_efficiency_cooling(X_y=True):
-    """Loads and returns the Cooling Efficiency data set(regression)
+def load_efficiency_cooling(
+    *, X_y: bool = True
+) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
+    """
+    Loads and returns the Cooling Efficiency data set(regression).
 
     The data set regards cooling load assessment of buildings (that is,
     energy efficiency) as a function of building parameters.
@@ -514,15 +529,15 @@ def load_efficiency_cooling(X_y=True):
     ----------
     X_y : bool, optional
         Return data as two objects of type torch.Tensor, otherwise as a
-        pandas.DataFrame.
+        pd.DataFrame.
 
     Returns
     -------
     X_y : bool, optional
         The input data (X) and the target of the prediction (y). The
         latter is extracted from the data set as the last column.
-    df : pandas.DataFrame
-        An object of type pandas.DataFrame which holds the data. The
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
         target is the last column.
 
     References
@@ -530,25 +545,22 @@ def load_efficiency_cooling(X_y=True):
     Bakurov, I., Buzzelli, M., Castelli, M., Vanneschi, L., & Schettini, R. (2021). General purpose optimization
     library (GPOL): a flexible and efficient multi-purpose optimization library in Python. Applied Sciences, 11(11),
     4774.
+
     """
-    df = pd.read_csv(
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "data",
-            "efficiency_cooling.txt",
-        )
-    )
+    df = pd.read_csv(DATA_FOLDER / "efficiency_cooling.txt")
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return df
+    return df
 
 
-def load_forest_fires(X_y=True):
-    """Loads and returns the Forest Fires data set (regression)
+def load_forest_fires(
+    *, X_y: bool = True
+) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
+    """
+    Loads and returns the Forest Fires data set (regression).
 
     The data set regards the prediction of the burned area of forest
     fires, in the northeast region of Portugal, by using meteorological
@@ -565,15 +577,15 @@ def load_forest_fires(X_y=True):
     ----------
     X_y : bool, optional
         Return data as two objects of type torch.Tensor, otherwise as a
-        pandas.DataFrame.
+        pd.DataFrame.
 
     Returns
     -------
     X, y : torch.Tensor, torch.Tensor
         The input data (X) and the target of the prediction (y). The
         latter is extracted from the data set as the last column.
-    df : pandas.DataFrame
-        An object of type pandas.DataFrame which holds the data. The
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
         target is the last column.
 
     References
@@ -581,23 +593,22 @@ def load_forest_fires(X_y=True):
     Bakurov, I., Buzzelli, M., Castelli, M., Vanneschi, L., & Schettini, R. (2021). General purpose optimization
     library (GPOL): a flexible and efficient multi-purpose optimization library in Python. Applied Sciences, 11(11),
     4774.
+
     """
-    df = pd.read_csv(
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "data", "forest_fires.txt"
-        )
-    )
+    df = pd.read_csv(DATA_FOLDER / "forest_fires.txt")
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return df
+    return df
 
 
-def load_parkinson_updrs(X_y=True):
-    """Loads and returns the Parkinsons Telemonitoring data set (regression)
+def load_parkinson_updrs(
+    *, X_y: bool = True
+) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
+    """
+    Loads and returns the Parkinsons Telemonitoring data set (regression).
 
     The data set was created by A. Tsanas and M. Little of the Oxford's
     university in collaboration with 10 medical centers in the US and
@@ -617,15 +628,15 @@ def load_parkinson_updrs(X_y=True):
     ----------
     X_y : bool, optional
         Return data as two objects of type torch.Tensor, otherwise as a
-        pandas.DataFrame.
+        pd.DataFrame.
 
     Returns
     -------
     X, y : torch.Tensor, torch.Tensor
         The input data (X) and the target of the prediction (y). The
         latter is extracted from the data set as the last column.
-    df : pandas.DataFrame
-        An object of type pandas.DataFrame which holds the data. The
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
         target is the last column.
 
     References
@@ -633,25 +644,20 @@ def load_parkinson_updrs(X_y=True):
     Bakurov, I., Buzzelli, M., Castelli, M., Vanneschi, L., & Schettini, R. (2021). General purpose optimization
     library (GPOL): a flexible and efficient multi-purpose optimization library in Python. Applied Sciences, 11(11),
     4774.
+
     """
-    df = pd.read_csv(
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "data",
-            "parkinson_total_UPDRS.txt",
-        )
-    )
+    df = pd.read_csv(DATA_FOLDER / "parkinson_total_UPDRS.txt")
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return df
+    return df
 
 
-def load_ld50(X_y=True):
-    """Loads and returns the LD50 data set(regression)
+def load_ld50(*, X_y: bool = True) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
+    """
+    Loads and returns the LD50 data set(regression).
 
     The data set consists in predicting the median amount of compound
     required to kill 50% of the test organisms (cavies), also called
@@ -669,15 +675,15 @@ def load_ld50(X_y=True):
     ----------
     X_y : bool, optional
         Return data as two objects of type torch.Tensor, otherwise as a
-        pandas.DataFrame.
+        pd.DataFrame.
 
     Returns
     -------
     X, y : torch.Tensor, torch.Tensor
         The input data (X) and the target of the prediction (y). The
         latter is extracted from the data set as the last column.
-    df : pandas.DataFrame
-        An object of type pandas.DataFrame which holds the data. The
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
         target is the last column.
 
     References
@@ -685,21 +691,20 @@ def load_ld50(X_y=True):
     Bakurov, I., Buzzelli, M., Castelli, M., Vanneschi, L., & Schettini, R. (2021). General purpose optimization
     library (GPOL): a flexible and efficient multi-purpose optimization library in Python. Applied Sciences, 11(11),
     4774.
+
     """
-    df = pd.read_csv(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), "data", "ld50.txt")
-    )
+    df = pd.read_csv(Path(os.path.realpath(__file__)).parent / "data" / "ld50.txt")
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return df
+    return df
 
 
-def load_ppb(X_y=True):
-    """Loads and returns the PPB data set(regression)
+def load_ppb(*, X_y: bool = True) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
+    """
+    Loads and returns the PPB data set(regression).
 
     The data set consists in predicting the percentage of the initial
     drug dose which binds plasma proteins (also known as the plasma
@@ -717,15 +722,15 @@ def load_ppb(X_y=True):
     ----------
     X_y : bool, optional
         Return data as two objects of type torch.Tensor, otherwise as a
-        pandas.DataFrame.
+        pd.DataFrame.
 
     Returns
     -------
     X, y : torch.Tensor, torch.Tensor
         The input data (X) and the target of the prediction (y). The
         latter is extracted from the data set as the last column.
-    df : pandas.DataFrame
-        An object of type pandas.DataFrame which holds the data. The
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
         target is the last column.
 
     References
@@ -733,21 +738,20 @@ def load_ppb(X_y=True):
     Bakurov, I., Buzzelli, M., Castelli, M., Vanneschi, L., & Schettini, R. (2021). General purpose optimization
     library (GPOL): a flexible and efficient multi-purpose optimization library in Python. Applied Sciences, 11(11),
     4774.
+
     """
-    df = pd.read_csv(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), "data", "ppb.txt")
-    )
+    df = pd.read_csv(DATA_FOLDER / "ppb.txt")
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return df
+    return df
 
 
-def load_bioav(X_y=True):
-    """Loads and returns the Oral Bioavailability data set (regression)
+def load_bioav(*, X_y: bool = True) -> tuple[torch.Tensor, torch.Tensor] | pd.DataFrame:
+    """
+    Loads and returns the Oral Bioavailability data set (regression).
 
     The data set consists in predicting the value of the percentage of
     the initial orally submitted drug dose that effectively reaches the
@@ -767,15 +771,15 @@ def load_bioav(X_y=True):
     ----------
     X_y : bool, optional
         Return data as two objects of type torch.Tensor, otherwise as a
-        pandas.DataFrame.
+        pd.DataFrame.
 
     Returns
     -------
     X, y : torch.Tensor, torch.Tensor
         The input data (X) and the target of the prediction (y). The
         latter is extracted from the data set as the last column.
-    df : pandas.DataFrame
-        An object of type pandas.DataFrame which holds the data. The
+    df : pd.DataFrame
+        An object of type pd.DataFrame which holds the data. The
         target is the last column.
 
     References
@@ -783,16 +787,12 @@ def load_bioav(X_y=True):
     Bakurov, I., Buzzelli, M., Castelli, M., Vanneschi, L., & Schettini, R. (2021). General purpose optimization
     library (GPOL): a flexible and efficient multi-purpose optimization library in Python. Applied Sciences, 11(11),
     4774.
+
     """
-    df = pd.read_csv(
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "data", "bioavailability.txt"
-        )
-    )
+    df = pd.read_csv(DATA_FOLDER / "bioavailability.txt")
     if X_y:
         return (
-            torch.from_numpy(df.values[:, :-1]).float(),
-            torch.from_numpy(df.values[:, -1]).float(),
+            torch.from_numpy(df.to_numpy()[:, :-1]).float(),
+            torch.from_numpy(df.to_numpy()[:, -1]).float(),
         )
-    else:
-        return df
+    return df

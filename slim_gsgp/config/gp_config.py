@@ -19,38 +19,56 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""
-This script sets up the configuration dictionaries for the execution of the GP algorithm
-"""
-from slim_gsgp.algorithms.GP.operators.crossover_operators import crossover_trees
-from slim_gsgp.initializers.initializers import rhh, grow, full
-from slim_gsgp.selection.selection_algorithms import tournament_selection_min
+"""Sets up the configuration dictionaries for the execution of the GP algorithm."""
 
-from slim_gsgp.evaluators.fitness_functions import *
-from slim_gsgp.utils.utils import protected_div
+from functools import partial
+
 import torch
 
+from slim_gsgp.algorithms.GP.operators.crossover_operators import crossover_trees
+from slim_gsgp.config.types import (
+    ConstantFunc,
+    FitnessFunc,
+    FunctionDef,
+    GPParameters,
+    GPPiInit,
+    GPSolveParameters,
+    InitializerFunc,
+)
+from slim_gsgp.evaluators.fitness_functions import (
+    mae,
+    mae_int,
+    mse,
+    rmse,
+    signed_errors,
+)
+from slim_gsgp.initializers.initializers import full, grow, rhh
+from slim_gsgp.selection.selection_algorithms import tournament_selection_min
+from slim_gsgp.utils.utils import protected_div
+
 # Define functions and constants
-FUNCTIONS = {
-    'add': {'function': torch.add, 'arity': 2},
-    'subtract': {'function': torch.sub, 'arity': 2},
-    'multiply': {'function': torch.mul, 'arity': 2},
-    'divide': {'function': protected_div, 'arity': 2}
+FUNCTIONS: dict[str, FunctionDef] = {
+    "add": {"function": torch.add, "arity": 2},
+    "subtract": {"function": torch.sub, "arity": 2},
+    "multiply": {"function": torch.mul, "arity": 2},
+    "divide": {"function": protected_div, "arity": 2},
 }
 
-CONSTANTS = {
-    'constant_2': lambda _: torch.tensor(2.0),
-    'constant_3': lambda _: torch.tensor(3.0),
-    'constant_4': lambda _: torch.tensor(4.0),
-    'constant_5': lambda _: torch.tensor(5.0),
-    'constant__1': lambda _: torch.tensor(-1.0)
+
+CONSTANTS: dict[str, ConstantFunc] = {
+    "constant_2": partial(torch.tensor, 2.0),
+    "constant_3": partial(torch.tensor, 3.0),
+    "constant_4": partial(torch.tensor, 4.0),
+    "constant_5": partial(torch.tensor, 5.0),
+    "constant__1": partial(torch.tensor, -1.0),
 }
 
 # Set parameters
-settings_dict = {"p_test": 0.2}
+settings_dict: dict[str, float] = {"p_test": 0.2}
+
 
 # GP solve parameters
-gp_solve_parameters = {
+gp_solve_parameters: GPSolveParameters = {
     "log": 1,
     "verbose": 1,
     "test_elite": True,
@@ -60,37 +78,40 @@ gp_solve_parameters = {
     "max_depth": 17,
     "n_elites": 1,
     "elitism": True,
-    "n_iter": 1000
+    "n_iter": 1000,
 }
 
-# GP parameters
-gp_parameters = {
+
+gp_parameters: GPParameters = {
     "initializer": "rhh",
     "selector": tournament_selection_min(2),
     "crossover": crossover_trees(FUNCTIONS),
     "settings_dict": settings_dict,
     "p_xo": 0.8,
     "pop_size": 100,
-    "seed": 74
+    "seed": 74,
 }
 
-gp_pi_init = {
-    'FUNCTIONS': FUNCTIONS,
-    'CONSTANTS': CONSTANTS,
+
+gp_pi_init: GPPiInit = {
+    "FUNCTIONS": FUNCTIONS,
+    "CONSTANTS": CONSTANTS,
     "p_c": 0,
-    "init_depth": 6
+    "init_depth": 6,
+    "init_pop_size": 0,
 }
 
-fitness_function_options = {
+
+fitness_function_options: dict[str, FitnessFunc] = {
     "rmse": rmse,
     "mse": mse,
     "mae": mae,
     "mae_int": mae_int,
-    "signed_errors": signed_errors
+    "signed_errors": signed_errors,
 }
 
-initializer_options = {
+initializer_options: dict[str, InitializerFunc] = {
     "rhh": rhh,
     "grow": grow,
-    "full": full
+    "full": full,
 }

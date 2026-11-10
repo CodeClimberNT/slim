@@ -24,11 +24,17 @@ Selection operator implementation.
 """
 
 import random
+from collections.abc import Callable
 
 import numpy as np
 
+from slim_gsgp.algorithms.GP.representations.population import Population
+from slim_gsgp.algorithms.GP.representations.tree import Tree
 
-def tournament_selection_min(pool_size):
+type TreeSelector = Callable[[Population], Tree]
+
+
+def tournament_selection_min(pool_size) -> TreeSelector:
     """
     Returns a function that performs tournament selection to select an individual with the lowest fitness from a
     population.
@@ -43,22 +49,24 @@ def tournament_selection_min(pool_size):
     Callable
         A function ('ts') that elects the individual with the lowest fitness from a randomly chosen pool.
 
-        Parameters
-        ----------
+    Parameters
+    ----------
         pop : Population
             The population from which individuals are drawn.
 
-        Returns
-        -------
+    Returns
+    -------
         Individual
             The individual with the lowest fitness in the pool.
+
     Notes
     -----
     The returned function performs tournament selection by receiving a population and returning the best of {pool_size}
     randomly selected individuals.
+
     """
 
-    def ts(pop):
+    def ts(pop: Population) -> Tree:
         """
         Selects the individual with the lowest fitness from a randomly chosen pool.
 
@@ -71,6 +79,7 @@ def tournament_selection_min(pool_size):
         -------
         Individual
             The individual with the lowest fitness in the pool.
+
         """
         pool = random.choices(pop.population, k=pool_size)
         return pool[np.argmin([ind.fitness for ind in pool])]
@@ -78,7 +87,7 @@ def tournament_selection_min(pool_size):
     return ts
 
 
-def tournament_selection_max(pool_size):
+def tournament_selection_max(pool_size: int) -> Callable:
     """
     Returns a function that performs tournament selection to select an individual with the highest fitness from a
     population.
@@ -93,21 +102,24 @@ def tournament_selection_max(pool_size):
     Callable
         A function ('ts') that elects the individual with the highest fitness from a randomly chosen pool.
 
-        Parameters
-        ----------
+    Parameters
+    ----------
         pop : Population
             The population from which individuals are drawn.
 
-        Returns
-        -------
+    Returns
+    -------
         Individual
             The individual with the lowest fitness in the pool.
+
     Notes
     -----
     The returned function performs tournament selection by receiving a population and returning the best of {pool_size}
     randomly selected individuals.
+
     """
-    def ts(pop):
+
+    def ts(pop: Population) -> Tree:
         """
         Selects the individual with the highest fitness from a randomly chosen pool.
 
@@ -120,9 +132,9 @@ def tournament_selection_max(pool_size):
         -------
         Individual
             The individual with the highest fitness in the pool.
+
         """
         pool = random.choices(pop.population, k=pool_size)
         return pool[np.argmax([ind.fitness for ind in pool])]
 
     return ts
-

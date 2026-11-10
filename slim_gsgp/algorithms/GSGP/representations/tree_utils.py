@@ -23,9 +23,11 @@
 Utility functions for Tree Evaluation and Mutation in GSGP.
 """
 
+import torch
+
 from slim_gsgp.algorithms.GP.representations.tree import Tree
 from slim_gsgp.algorithms.GP.representations.tree_utils import bound_value
-import torch
+
 
 def _execute_tree(individual, inputs, testing=False, logistic=False):
     """
@@ -50,6 +52,7 @@ def _execute_tree(individual, inputs, testing=False, logistic=False):
     -----
     The individual to be executed must have the `reconstruct` attribute set to True; otherwise,
     its structure will not be available for evaluation.
+
     """
     # if the calculation is for testing semantics
     if testing and individual.test_semantics is None:
@@ -63,7 +66,8 @@ def _execute_tree(individual, inputs, testing=False, logistic=False):
         # if not, use the operator (mutation or crossover) with the base trees to compute the semantics
         else:
             individual.test_semantics = individual.structure[0](
-                *individual.structure[1:], testing=True
+                *individual.structure[1:],
+                testing=True,
             )
 
     # if the calculation is for training semantics
@@ -79,8 +83,10 @@ def _execute_tree(individual, inputs, testing=False, logistic=False):
         # if not, use the operator (mutation or crossover) with the base trees to compute the semantics
         else:
             individual.train_semantics = individual.structure[0](
-                *individual.structure[1:], testing=False
+                *individual.structure[1:],
+                testing=False,
             )
+
 
 def apply_tree(tree, inputs):
     """
@@ -97,6 +103,7 @@ def apply_tree(tree, inputs):
     -------
     torch.Tensor
         Output of the evaluated tree.
+
     """
     if isinstance(tree.structure, tuple):  # If it's a function node
         function_name = tree.structure[0]
@@ -107,7 +114,8 @@ def apply_tree(tree, inputs):
             left_result = left_subtree.apply_tree(inputs)
             right_result = right_subtree.apply_tree(inputs)
             output = tree.FUNCTIONS[function_name]["function"](
-                left_result, right_result
+                left_result,
+                right_result,
             )
         else:
             left_subtree = tree.structure[1]
@@ -115,13 +123,13 @@ def apply_tree(tree, inputs):
             left_result = left_subtree.apply_tree(inputs)
             output = tree.FUNCTIONS[function_name]["function"](left_result)
         return bound_value(output, -1000000000000.0, 10000000000000.0)
-    else:  # If it's a terminal node
-        if tree.structure in list(tree.TERMINALS.keys()):
-            output = inputs[:, tree.TERMINALS[tree.structure]]
-            return output
-        elif tree.structure in list(tree.CONSTANTS.keys()):
-            output = tree.CONSTANTS[tree.structure](None)
-            return output
+    # If it's a terminal node
+    if tree.structure in list(tree.TERMINALS.keys()):
+        output = inputs[:, tree.TERMINALS[tree.structure]]
+        return output
+    if tree.structure in list(tree.CONSTANTS.keys()):
+        output = tree.CONSTANTS[tree.structure]()
+        return output
 
 
 def nested_depth_calculator(operator, depths):
@@ -141,6 +149,7 @@ def nested_depth_calculator(operator, depths):
     -------
     int
         Maximum depth after applying the operator.
+
     """
     if operator.__name__ == "tt_delta_sum":
         depths[0] += 2
@@ -175,6 +184,7 @@ def nested_nodes_calculator(operator, nodes):
     -------
     int
         Total number of nodes after applying the operator.
+
     """
     extra_operators_nodes = (
         [5, nodes[-1]]

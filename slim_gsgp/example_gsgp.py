@@ -19,10 +19,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from __future__ import annotations
+
+from slim_gsgp.datasets.data_loader import (
+    load_ppb,  # import the loader for the dataset PPB
+)
+from slim_gsgp.evaluators.fitness_functions import (
+    rmse,  # import the rmse fitness metric
+)
 from slim_gsgp.main_gsgp import gsgp  # import the slim_gsgp library
-from slim_gsgp.datasets.data_loader import load_ppb  # import the loader for the dataset PPB
-from slim_gsgp.evaluators.fitness_functions import rmse  # import the rmse fitness metric
-from slim_gsgp.utils.utils import train_test_split  # import the train-test split function
+from slim_gsgp.utils.utils import (
+    train_test_split,  # import the train-test split function
+)
 
 # Load the PPB dataset
 X, y = load_ppb(X_y=True)
@@ -34,10 +42,20 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, p_test=0.4)
 X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, p_test=0.5)
 
 # Apply the Standard GSGP algorithm
-final_tree = gsgp(X_train=X_train, y_train=y_train,
-                  X_test=X_val, y_test=y_val, p_xo=0,
-                  dataset_name='ppb', pop_size=100, n_iter=100,
-                  reconstruct=True, ms_lower=0, ms_upper=1, n_elites=2)
+final_tree = gsgp(
+    X_train=X_train,
+    y_train=y_train,
+    X_test=X_val,
+    y_test=y_val,
+    p_xo=0,
+    dataset_name="ppb",
+    pop_size=100,
+    n_iter=100,
+    reconstruct=True,
+    ms_lower=0,
+    ms_upper=1,
+    n_elites=2,
+)
 
 # Get the prediction of the best individual on the test set
 predictions = final_tree.predict(X_test)

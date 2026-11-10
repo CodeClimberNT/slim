@@ -19,19 +19,35 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from __future__ import annotations
+
 import math
 import random
+from typing import TYPE_CHECKING, Literal, overload
 
 import numpy as np
 import torch
-from slim_gsgp.algorithms.GP.representations.tree_utils import (create_full_random_tree,
-                                                                create_grow_random_tree)
-from slim_gsgp.algorithms.GSGP.representations.tree import Tree
 from sklearn.metrics import root_mean_squared_error
 
+from slim_gsgp.algorithms.GP.representations.tree_utils import (
+    create_full_random_tree,
+    create_grow_random_tree,
+)
+from slim_gsgp.algorithms.GSGP.representations.tree import Tree
 
-def protected_div(x1, x2):
-    """Implements the division protected against zero denominator
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from numpy.typing import ArrayLike
+
+    from slim_gsgp.algorithms.GP.representations.population import Population
+    from slim_gsgp.algorithms.SLIM_GSGP.representations.individual import Individual
+    from slim_gsgp.config.types import FitnessFunc
+
+
+def protected_div(x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
+    """
+    Implements the division protected against zero denominator.
 
     Performs division between x1 and x2. If x2 is (or has) zero(s), the
     function returns the numerator's value(s).
@@ -47,6 +63,7 @@ def protected_div(x1, x2):
     -------
     torch.Tensor
         Result of protected division between x1 and x2.
+
     """
     return torch.where(
         torch.abs(x2) > 0.001,
@@ -70,12 +87,44 @@ def mean_(x1, x2):
     -------
     torch.Tensor
         The mean of the two tensors.
+
     """
     return torch.div(torch.add(x1, x2), 2)
 
 
-def train_test_split(X, y, p_test=0.3, shuffle=True, indices_only=False, seed=0):
-    """Splits X and y tensors into train and test subsets
+@overload
+def train_test_split(
+    X: torch.Tensor,
+    y: torch.Tensor,
+    p_test: float = 0.3,
+    *,
+    shuffle: bool = True,
+    indices_only: Literal[False] = False,
+    seed: int = 0,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]: ...
+@overload
+def train_test_split(
+    X: torch.Tensor,
+    y: torch.Tensor,
+    p_test: float = 0.3,
+    *,
+    shuffle: bool = True,
+    indices_only: Literal[True],
+) -> tuple[torch.Tensor, torch.Tensor]: ...
+def train_test_split(
+    X: torch.Tensor,
+    y: torch.Tensor,
+    p_test: float = 0.3,
+    *,
+    shuffle: bool = True,
+    indices_only: bool = False,
+    seed: int = 0,
+) -> (
+    tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]
+    | tuple[torch.Tensor, torch.Tensor]
+):
+    """
+    Splits X and y tensors into train and test subsets.
 
     This method replicates the behaviour of Sklearn's 'train_test_split'.
 
@@ -108,21 +157,20 @@ def train_test_split(X, y, p_test=0.3, shuffle=True, indices_only=False, seed=0)
         Indices representing the training partition.
     test_indices : torch.Tensor
         Indices representing the test partition.
+
     """
     torch.manual_seed(seed)
-    if shuffle:
-        indices = torch.randperm(X.shape[0])
-    else:
-        indices = torch.arange(0, X.shape[0], 1)
-    split = int(math.floor(p_test * X.shape[0]))
+    indices: torch.Tensor = (
+        torch.randperm(X.shape[0]) if shuffle else torch.arange(0, X.shape[0], 1)
+    )
+    split: int = math.floor(p_test * X.shape[0])
     train_indices, test_indices = indices[split:], indices[:split]
 
     if indices_only:
         return train_indices, test_indices
-    else:
-        X_train, X_test = X[train_indices], X[test_indices]
-        y_train, y_test = y[train_indices], y[test_indices]
-        return X_train, X_test, y_train, y_test
+    X_train, X_test = X[train_indices], X[test_indices]
+    y_train, y_test = y[train_indices], y[test_indices]
+    return X_train, X_test, y_train, y_test
 
 
 def tensor_dimensioned_sum(dim):
@@ -138,6 +186,7 @@ def tensor_dimensioned_sum(dim):
     -------
     function
     A function that sums tensors over the specified dimension.
+
     """
 
     def tensor_sum(input):
@@ -147,13 +196,20 @@ def tensor_dimensioned_sum(dim):
 
 
 def verbose_reporter(
-        dataset, generation, pop_val_fitness, pop_test_fitness, timing, nodes
+    dataset: str,
+    generation: int,
+    pop_val_fitness: float,
+    pop_test_fitness: float | None,
+    timing: float,
+    nodes: int,
 ):
     """
     Prints a formatted report of generation, fitness values, timing, and node count.
 
     Parameters
     ----------
+    dataset : str
+        Dataset name.
     generation : int
         Current generation number.
     pop_val_fitness : float
@@ -165,44 +221,42 @@ def verbose_reporter(
     nodes : int
         Count of nodes in the population.
 
-    Returns
-    -------
-    None
-        Outputs a formatted report to the console.
     """
     digits_dataset = len(str(dataset))
     digits_generation = len(str(generation))
     digits_val_fit = len(str(float(pop_val_fitness)))
     if pop_test_fitness is not None:
         digits_test_fit = len(str(float(pop_test_fitness)))
-        test_text_init = (
-                "|"
-                + " " * 3
-                + str(float(pop_test_fitness))
-                + " " * (23 - digits_test_fit)
-                + "|"
+        test_text_init: str = (
+            "|"
+            + " " * 3
+            + str(float(pop_test_fitness))
+            + " " * (23 - digits_test_fit)
+            + "|"
         )
-        test_text = (
-                " " * 3 + str(float(pop_test_fitness)) + " " * (23 - digits_test_fit) + "|"
+        test_text: str = (
+            " " * 3 + str(float(pop_test_fitness)) + " " * (23 - digits_test_fit) + "|"
         )
     else:
         digits_test_fit = 4
-        test_text_init = "|" + " " * 3 + "None" + " " * (23 - digits_test_fit) + "|"
-        test_text = " " * 3 + "None" + " " * (23 - digits_test_fit) + "|"
+        test_text_init: str = (
+            "|" + " " * 3 + "None" + " " * (23 - digits_test_fit) + "|"
+        )
+        test_text: str = " " * 3 + "None" + " " * (23 - digits_test_fit) + "|"
     digits_timing = len(str(timing))
     digits_nodes = len(str(nodes))
 
     if generation == 0:
         print("Verbose Reporter")
         print(
-            "-----------------------------------------------------------------------------------------------------------------------------------------"
+            "-----------------------------------------------------------------------------------------------------------------------------------------",
         )
         print(
             "|         Dataset         |  Generation  |     Train Fitness     |       Test Fitness       |        "
-            "Timing          |      Nodes       |"
+            "Timing          |      Nodes       |",
         )
         print(
-            "-----------------------------------------------------------------------------------------------------------------------------------------"
+            "-----------------------------------------------------------------------------------------------------------------------------------------",
         )
         print(
             "|"
@@ -225,7 +279,7 @@ def verbose_reporter(
             + " " * 6
             + str(nodes)
             + " " * (12 - digits_nodes)
-            + "|"
+            + "|",
         )
     else:
         print(
@@ -250,11 +304,11 @@ def verbose_reporter(
             + " " * 6
             + str(nodes)
             + " " * (12 - digits_nodes)
-            + "|"
+            + "|",
         )
 
 
-def get_terminals(X):
+def get_terminals(X: torch.Tensor) -> dict[str, int]:
     """
     Get terminal nodes for a dataset.
 
@@ -267,12 +321,12 @@ def get_terminals(X):
     -------
     dict
         Dictionary of terminal nodes.
+
     """
+    return {f"x{i}": i for i in range(len(X[0]))}
 
-    return  {f"x{i}": i for i in range(len(X[0]))}
 
-
-def get_best_min(population, n_elites):
+def get_best_min(population: Population, n_elites: int) -> tuple[list[Tree], Tree]:
     """
     Get the best individuals from the population with the minimum fitness.
 
@@ -289,18 +343,18 @@ def get_best_min(population, n_elites):
         The list of elite individuals.
     Individual
         Best individual from the elites.
+
     """
     if n_elites > 1:
         idx = np.argpartition(population.fit, n_elites)
         elites = [population.population[i] for i in idx[:n_elites]]
         return elites, elites[np.argmin([elite.fitness for elite in elites])]
 
-    else:
-        elite = population.population[np.argmin(population.fit)]
-        return [elite], elite
+    elite = population.population[np.argmin(population.fit)]
+    return [elite], elite
 
 
-def get_best_max(population, n_elites):
+def get_best_max(population: Population, n_elites: int) -> tuple[list[Tree], Tree]:
     """
     Get the best individuals from the population with the maximum fitness.
 
@@ -317,27 +371,28 @@ def get_best_max(population, n_elites):
         The list of elite individuals.
     Individual
         Best individual from the elites.
+
     """
     if n_elites > 1:
         idx = np.argpartition(population.fit, -n_elites)
         elites = [population.population[i] for i in idx[-n_elites:]]
         return elites, elites[np.argmax([elite.fitness for elite in elites])]
 
-    else:
-        elite = population.population[np.argmax(population.fit)]
-        return [elite], elite
+    elite = population.population[np.argmax(population.fit)]
+    return [elite], elite
 
 
 def get_random_tree(
-        max_depth,
-        FUNCTIONS,
-        TERMINALS,
-        CONSTANTS,
-        inputs,
-        p_c=0.3,
-        grow_probability=1,
-        logistic=True,
-):
+    max_depth: int,
+    FUNCTIONS: dict,
+    TERMINALS: dict,
+    CONSTANTS: dict,
+    inputs: torch.Tensor,
+    p_c: float = 0.3,
+    grow_probability: float = 1,
+    *,
+    logistic: bool = True,
+) -> Tree:
     """
     Get a random tree using either grow or full method.
 
@@ -364,14 +419,23 @@ def get_random_tree(
     -------
     Tree
         The generated random tree.
+
     """
     if random.random() < grow_probability:
         tree_structure = create_grow_random_tree(
-            max_depth, FUNCTIONS, TERMINALS, CONSTANTS, p_c
+            max_depth,
+            FUNCTIONS,
+            TERMINALS,
+            CONSTANTS,
+            p_c,
         )
     else:
         tree_structure = create_full_random_tree(
-            max_depth, FUNCTIONS, TERMINALS, CONSTANTS, p_c
+            max_depth,
+            FUNCTIONS,
+            TERMINALS,
+            CONSTANTS,
+            p_c,
         )
 
     tree = Tree(
@@ -384,7 +448,7 @@ def get_random_tree(
     return tree
 
 
-def generate_random_uniform(lower, upper):
+def generate_random_uniform(lower: float, upper: float) -> Callable[[], float]:
     """
     Generate a random number within a specified range using numpy random.uniform.
 
@@ -399,12 +463,14 @@ def generate_random_uniform(lower, upper):
     -------
     Callable
         A function that when called, generates a random number within the specified range.
+
     Notes
     -----
     The returned function takes no input and returns a random float between lower and upper whenever called.
+
     """
 
-    def generate_num():
+    def generate_num() -> float:
         """
         Generate a random number within a specified range.
 
@@ -412,6 +478,7 @@ def generate_random_uniform(lower, upper):
         -------
         float
             A random number between the defined lower and upper bounds.
+
         """
         return random.uniform(lower, upper)
 
@@ -435,6 +502,7 @@ def show_individual(tree, operator):
     -------
     str
         The string representation of the individual's structure.
+
     """
     op = "+" if operator == "sum" else "*"
 
@@ -450,11 +518,11 @@ def show_individual(tree, operator):
                 )
             )
             for t in tree.collection
-        ]
+        ],
     )
 
 
-def gs_rmse(y_true, y_pred):
+def gs_rmse(y_true: ArrayLike, y_pred: ArrayLike) -> float:
     """
     Calculate the root mean squared error.
 
@@ -469,11 +537,12 @@ def gs_rmse(y_true, y_pred):
     -------
     float
         The root mean squared error.
+
     """
     return root_mean_squared_error(y_true, y_pred[0])
 
 
-def gs_size(y_true, y_pred):
+def gs_size(y_true: ArrayLike, y_pred: ArrayLike) -> int:
     """
     Get the size of the predicted values.
 
@@ -488,19 +557,39 @@ def gs_size(y_true, y_pred):
     -------
     int
         The size of the predicted values.
+
     """
     return y_pred[1]
 
 
-def validate_inputs(X_train, y_train, X_test, y_test, pop_size, n_iter, elitism, n_elites, init_depth, log_path,
-                    prob_const, tree_functions, tree_constants, log, verbose, minimization, n_jobs, test_elite,
-                    fitness_function, initializer, tournament_size):
+def validate_inputs(
+    X_train: torch.Tensor,
+    y_train: torch.Tensor,
+    X_test: torch.Tensor | None = None,
+    y_test: torch.Tensor | None = None,
+    pop_size: int = 100,
+    n_iter: int = 100,
+    elitism: bool = False,
+    n_elites: int = 0,
+    init_depth: int = 6,
+    log_path: str | None = None,
+    prob_const: float | None = None,
+    tree_functions: list | None = None,
+    tree_constants: list | None = None,
+    log: int | None = None,
+    verbose: int | None = None,
+    minimization: bool | None = None,
+    n_jobs: int | None = None,
+    test_elite: bool | None = None,
+    fitness_function: str | None = None,
+    initializer: str | None = None,
+    tournament_size: int | None = None,
+):
     """
     Validates the inputs based on the specified conditions.
 
     Parameters
     ----------
-    tournament_size
     X_train: (torch.Tensor)
         Training input data.
     y_train: (torch.Tensor)
@@ -541,6 +630,13 @@ def validate_inputs(X_train, y_train, X_test, y_test, pop_size, n_iter, elitism,
         List of constants allowed to appear in the trees.
     test_elite : bool, optional
         Whether to test the elite individual on the test set after each generation.
+    tournament_size: int, optional
+        The tournament size for the genetic programming algorithm (must be at least 2).
+
+    Raises
+    ------
+    TypeError: If any of the input type mismatch the expected one from the documentation
+    ValueError: If the domain of the parameter exceed the expected value (e.g. `tournament_size < 2`)
 
     """
     if not isinstance(X_train, torch.Tensor):
@@ -567,8 +663,10 @@ def validate_inputs(X_train, y_train, X_test, y_test, pop_size, n_iter, elitism,
         raise TypeError("tournament_size must be an int")
 
     # assuring the prob_const is valid
-    if not (isinstance(prob_const, float) or isinstance(prob_const, int)):
-        raise TypeError("prob_const must be a float (or an int when probability is 1 or 0)")
+    if not (isinstance(prob_const, (float, int))):
+        raise TypeError(
+            "prob_const must be a float (or an int when probability is 1 or 0)",
+        )
 
     if not 0 <= prob_const <= 1:
         raise ValueError("prob_const must be a number between 0 and 1")
@@ -583,8 +681,10 @@ def validate_inputs(X_train, y_train, X_test, y_test, pop_size, n_iter, elitism,
     if not isinstance(tree_constants, list) or len(tree_constants) == 0:
         raise TypeError("tree_constants must be a non-empty list")
 
-    assert all(isinstance(elem, (int, float)) and not isinstance(elem, bool) for elem in tree_constants), \
-    "tree_constants must be a list containing only integers and floats"
+    assert all(
+        isinstance(elem, (int, float)) and not isinstance(elem, bool)
+        for elem in tree_constants
+    ), "tree_constants must be a list containing only integers and floats"
 
     if not isinstance(log, int):
         raise TypeError("log_level must be an int")
@@ -617,9 +717,10 @@ def validate_inputs(X_train, y_train, X_test, y_test, pop_size, n_iter, elitism,
         raise ValueError("tournament_size must be at least 2")
 
 
-def check_slim_version(slim_version):
+def check_slim_version(slim_version: str):
     """
-    Validate the slim_gsgp version given as input bu the users and assign the correct values to the parameters op, sig and trees
+    Validate the slim_gsgp version given as input bu the users and assign the correct values to the parameters op, sig and trees.
+
     Parameters
     ----------
     slim_version : str
@@ -629,39 +730,51 @@ def check_slim_version(slim_version):
     -------
     op, sig, trees
         Parameters reflecting the kind of operation considered, the use of the sigmoid and the use of multiple trees.
+
+    Raises
+    ------
+    ValueError
+        If SLIM configuration mismatch
+
     """
     if slim_version == "SLIM+SIG2":
         return "sum", True, True
-    elif slim_version == "SLIM*SIG2":
+    if slim_version == "SLIM*SIG2":
         return "mul", True, True
-    elif slim_version == "SLIM+ABS":
+    if slim_version == "SLIM+ABS":
         return "sum", False, False
-    elif slim_version == "SLIM*ABS":
+    if slim_version == "SLIM*ABS":
         return "mul", False, False
-    elif slim_version == "SLIM+SIG1":
+    if slim_version == "SLIM+SIG1":
         return "sum", True, False
-    elif slim_version == "SLIM*SIG1":
+    if slim_version == "SLIM*SIG1":
         return "mul", True, False
-    else:
-        raise Exception('Invalid SLIM configuration')
+    raise ValueError("Invalid SLIM configuration")
 
-def _evaluate_slim_individual(individual, ffunction, y, testing=False, operator="sum"):
+
+def _evaluate_slim_individual(
+    individual: Individual,
+    ffunction: FitnessFunc,
+    y,
+    *,
+    testing: bool = False,
+    operator="sum",
+) -> torch.Tensor | None:
     """
     Evaluate the individual using a fitness function.
 
     Args:
+        individual: Individual to evaluate.
         ffunction: Fitness function to evaluate the individual.
         y: Expected output (target) values as a torch tensor.
         testing: Boolean indicating if the evaluation is for testing semantics.
         operator: Operator to apply to the semantics ("sum" or "prod").
 
     Returns:
-        None
+        None or torch.Tensor (only if testing is `False`)
+
     """
-    if operator == "sum":
-        operator = torch.sum
-    else:
-        operator = torch.prod
+    operator = torch.sum if operator == "sum" else torch.prod
 
     if testing:
         individual.test_fitness = ffunction(
@@ -672,23 +785,23 @@ def _evaluate_slim_individual(individual, ffunction, y, testing=False, operator=
                 1000000000000.0,
             ),
         )
+        return None
 
-    else:
-        individual.fitness = ffunction(
-            y,
-            torch.clamp(
-                operator(individual.train_semantics, dim=0),
-                -1000000000000.0,
-                1000000000000.0,
-            ),
-        )
+    individual.fitness = ffunction(
+        y,
+        torch.clamp(
+            operator(individual.train_semantics, dim=0),
+            -1000000000000.0,
+            1000000000000.0,
+        ),
+    )
 
-        # if testing is false, return the value so that training parallelization has effect
-        return ffunction(
-                y,
-                torch.clamp(
-                    operator(individual.train_semantics, dim=0),
-                    -1000000000000.0,
-                    1000000000000.0,
-                ),
-            )
+    # if testing is false, return the value so that training parallelization has effect
+    return ffunction(
+        y,
+        torch.clamp(
+            operator(individual.train_semantics, dim=0),
+            -1000000000000.0,
+            1000000000000.0,
+        ),
+    )

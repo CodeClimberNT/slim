@@ -24,7 +24,9 @@ Population Class for Evolutionary Computation with Tree Structures using PyTorch
 """
 
 from joblib import Parallel, delayed
+
 from slim_gsgp.algorithms.GSGP.representations.tree_utils import _execute_tree
+from slim_gsgp.config.types import FitnessFunc
 
 
 class Population:
@@ -45,6 +47,7 @@ class Population:
             The number of individuals in the population.
         nodes_count : int
             The total number of nodes across all individuals in the population.
+
         """
         self.population = pop
         self.size = len(pop)
@@ -67,9 +70,13 @@ class Population:
         Returns
         -------
         None
+
         """
         # Calculate semantics for each individual in the population in a sequential fashion
-        [_execute_tree(individual, inputs=inputs, testing=testing, logistic=logistic) for individual in self.population]
+        [
+            _execute_tree(individual, inputs=inputs, testing=testing, logistic=logistic)
+            for individual in self.population
+        ]
 
         # Store the semantics based on whether it's for testing or training
         if testing:
@@ -89,6 +96,7 @@ class Population:
         -------
         int
             Size of the population.
+
         """
         return self.size
 
@@ -105,10 +113,11 @@ class Population:
         -------
         Tree
             The individual at the specified index.
+
         """
         return self.population[item]
 
-    def evaluate(self, ffunction, y, n_jobs=1):
+    def evaluate(self, ffunction: FitnessFunc, y, n_jobs=1):
         """
         Evaluate the population using a fitness function.
 
@@ -126,13 +135,16 @@ class Population:
         Returns
         -------
         None
+
         """
         # Evaluate all individuals in the population in a parallel fashion
         self.fit = Parallel(n_jobs=n_jobs)(
             delayed(ffunction)(
-                y, individual.train_semantics
-            ) for individual in self.population
+                y,
+                individual.train_semantics,
+            )
+            for individual in self.population
         )
 
         # Assign individuals' fitness
-        [self.population[i].__setattr__('fitness', f) for i, f in enumerate(self.fit)]
+        [self.population[i].__setattr__("fitness", f) for i, f in enumerate(self.fit)]

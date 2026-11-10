@@ -19,14 +19,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from slim_gsgp.main_gp import gp  # import the slim_gsgp library
 import pytest
 import torch
-from slim_gsgp.datasets.data_loader import load_ppb  # import the loader for the dataset PPB
-from slim_gsgp.evaluators.fitness_functions import rmse  # import the rmse fitness metric
-from slim_gsgp.utils.utils import train_test_split  # import the train-test split function
 
-
+from slim_gsgp.datasets.data_loader import (
+    load_ppb,  # import the loader for the dataset PPB
+)
+from slim_gsgp.evaluators.fitness_functions import (
+    rmse,  # import the rmse fitness metric
+)
+from slim_gsgp.main_gp import gp  # import the slim_gsgp library
+from slim_gsgp.utils.utils import (
+    train_test_split,  # import the train-test split function
+)
 
 # NOTE: The number of generations is lowered in most tests to prevent unnecessary running times when testing.
 
@@ -56,6 +61,7 @@ valid_initializer = "random"
 # Result of a pre-computed run
 valid_result = 29.822668075561523
 
+
 def test_gp_valid_inputs():
     X_train = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
     y_train = torch.tensor([1, 0])
@@ -63,10 +69,12 @@ def test_gp_valid_inputs():
     result = gp(X_train, y_train, n_iter=3)
     assert result is not None  # Check if function returns valid output
 
+
 def test_gp_invalid_X_train():
     y_train = torch.tensor([1, 0])
     with pytest.raises(TypeError, match="X_train must be a torch.Tensor"):
         gp("invalid_type", y_train)
+
 
 # Test for invalid pop_size (should be int)
 def test_gp_invalid_pop_size():
@@ -75,12 +83,14 @@ def test_gp_invalid_pop_size():
     with pytest.raises(TypeError, match="pop_size must be an int"):
         gp(X_train, y_train, pop_size="invalid_type")
 
+
 # Test for invalid prob_const (should be float)
 def test_gp_invalid_prob_const():
     X_train = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
     y_train = torch.tensor([1, 0])
     with pytest.raises(TypeError, match="prob_const must be a float"):
         gp(X_train, y_train, prob_const="invalid_type")
+
 
 # Test for out-of-range prob_const (should be between 0 and 1)
 def test_gp_out_of_range_prob_const():
@@ -89,36 +99,49 @@ def test_gp_out_of_range_prob_const():
     with pytest.raises(ValueError, match="prob_const must be a number between 0 and 1"):
         gp(X_train, y_train, prob_const=1.5)
 
+
 def test_gp_min_n_iter():
     with pytest.raises(ValueError, match="n_iter must be greater than 0"):
         gp(valid_X_train, valid_y_train, n_iter=0)  # n_iter too small
 
+
 def test_gp_seed_reproducibility():
     result1 = gp(valid_X_train, valid_y_train, seed=42, n_iter=valid_n_iter)
     result2 = gp(valid_X_train, valid_y_train, seed=42, n_iter=valid_n_iter)
-    assert torch.equal(result1.predict(valid_X_test), result2.predict(valid_X_test)), \
-            "Results should be reproducible with the same seed"
+    assert torch.equal(result1.predict(valid_X_test), result2.predict(valid_X_test)), (
+        "Results should be reproducible with the same seed"
+    )
+
 
 def test_gp_n_jobs_parallelism():
     result = gp(valid_X_train, valid_y_train, n_jobs=4, n_iter=valid_n_iter)
     assert result is not None, "Function should run successfully in parallel"
+
 
 def test_gp_immutability():
     X, y = load_ppb(X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, p_test=0.4)
     X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, p_test=0.5)
 
-    final_tree = gp(X_train=X_train, y_train=y_train,
-                    X_test=X_val, y_test=y_val,
-                    dataset_name='ppb', pop_size=100, n_iter=100, init_depth=8)
+    final_tree = gp(
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_val,
+        y_test=y_val,
+        dataset_name="ppb",
+        pop_size=100,
+        n_iter=100,
+        init_depth=8,
+    )
 
     predictions = final_tree.predict(X_test)
 
     # Compute and print the RMSE on the test set
-    assert float(rmse(y_true=y_test, y_pred=predictions)) == valid_result, "Final result should not change with updates"
+    assert float(rmse(y_true=y_test, y_pred=predictions)) == valid_result, (
+        "Final result should not change with updates"
+    )
+
 
 def test_gp_no_max_depth():
     result = gp(valid_X_train, valid_y_train, max_depth=None, n_iter=3, pop_size=5)
     assert result is not None  # Check if function returns valid output
-
-

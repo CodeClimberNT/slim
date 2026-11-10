@@ -28,11 +28,15 @@ import time
 
 import numpy as np
 import torch
+
 from slim_gsgp.algorithms.GP.representations.tree import Tree as GP_Tree
 from slim_gsgp.algorithms.GSGP.representations.population import Population
 from slim_gsgp.algorithms.GSGP.representations.tree import Tree
 from slim_gsgp.algorithms.GSGP.representations.tree_utils import (
-    nested_depth_calculator, nested_nodes_calculator)
+    nested_depth_calculator,
+    nested_nodes_calculator,
+)
+from slim_gsgp.config.types import FitnessFunc
 from slim_gsgp.utils.diversity import gsgp_pop_div_from_vectors
 from slim_gsgp.utils.logger import logger
 from slim_gsgp.utils.utils import get_random_tree, verbose_reporter
@@ -87,8 +91,8 @@ class GSGP:
             Seed for random number generation. Defaults to 0.
         settings_dict : dict, optional
             Additional settings dictionary. Defaults to None.
-        """
 
+        """
         self.pi_init = pi_init
         self.selector = selector
         self.p_m = p_m
@@ -123,10 +127,10 @@ class GSGP:
         test_elite=False,
         log_path=None,
         run_info=None,
-        ffunction=None,
+        ffunction: FitnessFunc | None = None,
         reconstruct=False,
         n_elites=1,
-        n_jobs=1
+        n_jobs=1,
     ):
         """
         Execute the GSGP algorithm.
@@ -157,7 +161,7 @@ class GSGP:
             Path to save logs. Default is None.
         run_info : list
             Information about the current run. Default is None.
-        ffunction : callable
+        ffunction : function
             Fitness function. Default is None.
         reconstruct : bool
             Whether to reconstruct trees. Default is False.
@@ -165,8 +169,8 @@ class GSGP:
             Number of elites. Default is 1.
         n_jobs : int
             The maximum number of jobs for parallel processing. Default is 1.
-        """
 
+        """
         # setting the seeds
         torch.manual_seed(self.seed)
         np.random.seed(self.seed)
@@ -185,7 +189,7 @@ class GSGP:
                     reconstruct=True,
                 )
                 for tree in self.initializer(**self.pi_init)
-            ]
+            ],
         )
 
         # calculating the semantics for the initial population
@@ -222,15 +226,14 @@ class GSGP:
                                     else ind.train_semantics.repeat(len(X_train))
                                 )
                                 for ind in population.population
-                            ]
-                        )
+                            ],
+                        ),
                     ),
                     np.std(population.fit),
                     log,
                 ]
 
             elif log == 3:
-
                 add_info = [
                     self.elite.test_fitness,
                     self.elite.nodes,
@@ -240,7 +243,6 @@ class GSGP:
                 ]
 
             elif log == 4:
-
                 add_info = [
                     self.elite.test_fitness,
                     self.elite.nodes,
@@ -253,8 +255,8 @@ class GSGP:
                                     else ind.train_semantics.repeat(len(X_train))
                                 )
                                 for ind in population.population
-                            ]
-                        )
+                            ],
+                        ),
                     ),
                     np.std(population.fit),
                     " ".join([str(ind.nodes) for ind in population.population]),
@@ -263,7 +265,6 @@ class GSGP:
                 ]
 
             else:
-
                 add_info = [self.elite.test_fitness, self.elite.nodes, log]
 
             # logging the results
@@ -297,7 +298,6 @@ class GSGP:
 
             # filling the offspring population
             while len(offs_pop) < self.pop_size:
-
                 # if choosing xover
                 if random.random() < self.p_xo:
                     p1, p2 = self.selector(population), self.selector(population)
@@ -336,10 +336,12 @@ class GSGP:
                     # if reconstruct = False, calculate the nodes and the depth of the offspring
                     if not reconstruct:
                         offs1.nodes = nested_nodes_calculator(
-                            self.crossover, [p1.nodes, p2.nodes, r_tree.nodes]
+                            self.crossover,
+                            [p1.nodes, p2.nodes, r_tree.nodes],
                         )
                         offs1.depth = nested_depth_calculator(
-                            self.crossover, [p1.depth, p2.depth, r_tree.depth]
+                            self.crossover,
+                            [p1.depth, p2.depth, r_tree.depth],
                         )
 
                     # adding the offspring to the offspring population
@@ -358,7 +360,6 @@ class GSGP:
                         "standard_geometric_mutation",
                         "product_two_trees_geometric_mutation",
                     ]:
-
                         r_tree1 = get_random_tree(
                             max_depth=self.pi_init["init_depth"],
                             FUNCTIONS=self.pi_init["FUNCTIONS"],
@@ -384,7 +385,9 @@ class GSGP:
                         if test_elite:
                             [
                                 rt.calculate_semantics(
-                                    X_test, testing=True, logistic=True
+                                    X_test,
+                                    testing=True,
+                                    logistic=True,
                                 )
                                 for rt in mutation_trees
                             ]
@@ -407,7 +410,9 @@ class GSGP:
                         # calculating the testing semantics of the random tree, if applicable
                         if test_elite:
                             r_tree1.calculate_semantics(
-                                X_test, testing=True, logistic=False
+                                X_test,
+                                testing=True,
+                                logistic=False,
                             )
 
                     offs1 = Tree(
@@ -417,7 +422,10 @@ class GSGP:
                             else None
                         ),
                         train_semantics=self.mutator(
-                            p1, *mutation_trees, ms_, testing=False
+                            p1,
+                            *mutation_trees,
+                            ms_,
+                            testing=False,
                         ),
                         test_semantics=(
                             self.mutator(p1, *mutation_trees, ms_, testing=True)
@@ -466,7 +474,6 @@ class GSGP:
 
             # logging the results if log !=0
             if log != 0:
-
                 if log == 2:
                     add_info = [
                         self.elite.test_fitness,
@@ -480,27 +487,25 @@ class GSGP:
                                         else ind.train_semantics.repeat(len(X_train))
                                     )
                                     for ind in population.population
-                                ]
-                            )
+                                ],
+                            ),
                         ),
                         np.std(population.fit),
                         log,
                     ]
 
                 elif log == 3:
-
                     add_info = [
                         self.elite.test_fitness,
                         self.elite.nodes,
                         " ".join(
-                            [str(ind.nodes_count) for ind in population.population]
+                            [str(ind.nodes_count) for ind in population.population],
                         ),
                         " ".join([str(f) for f in population.fit]),
                         log,
                     ]
 
                 elif log == 4:
-
                     add_info = [
                         self.elite.test_fitness,
                         self.elite.nodes,
@@ -513,8 +518,8 @@ class GSGP:
                                         else ind.train_semantics.repeat(len(X_train))
                                     )
                                     for ind in population.population
-                                ]
-                            )
+                                ],
+                            ),
                         ),
                         np.std(population.fit),
                         " ".join([str(ind.nodes) for ind in population.population]),
@@ -523,7 +528,6 @@ class GSGP:
                     ]
 
                 else:
-
                     add_info = [self.elite.test_fitness, self.elite.nodes, log]
 
                 # logging the results

@@ -19,8 +19,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from slim_gsgp.utils.utils import get_best_max, get_best_min
 import random
+
+from slim_gsgp.utils.utils import get_best_max, get_best_min
+
 
 def test_get_best_max():
     class IndivTest:
@@ -35,11 +37,11 @@ def test_get_best_max():
             self.population = population
             self.fit = [indiv.fitness for indiv in self.population]
 
-    example1 =  IndivTest(1)
-    example2 =  IndivTest(2)
-    example3 =  IndivTest(3)
-    example4 =  IndivTest(4)
-    example5 =  IndivTest(5)
+    example1 = IndivTest(1)
+    example2 = IndivTest(2)
+    example3 = IndivTest(3)
+    example4 = IndivTest(4)
+    example5 = IndivTest(5)
 
     example_list = [example1, example2, example3, example4, example5]
     expected_top = sorted(example_list, key=lambda x: x.fitness, reverse=True)[:3]
@@ -49,8 +51,16 @@ def test_get_best_max():
         example_pop = PopTest(example_list)
         result1, result2 = get_best_max(example_pop, 3)
 
-        assert (example4 in expected_top and example5 in expected_top and
-                result2 == example5)
+        assert (
+            example4 in expected_top
+        )
+        assert (
+            example5 in expected_top
+        )
+        assert (
+            result2 == example5
+        )
+
 
 def test_get_best_min():
     class indiv_test:
@@ -73,10 +83,20 @@ def test_get_best_min():
 
     example_list = [example1, example2, example3, example4, example5]
 
-    for i in range(30):
+    for _ in range(30):
         random.shuffle(example_list)
         example_pop = pop_test(example_list)
         result1, result2 = get_best_min(example_pop, 3)
 
-        assert (example1 in result1 and example2 in result1 and example3 in result1 and
-                result2 == example1)
+        assert (
+            example1 in result1
+        )
+        assert (
+            example2 in result1
+        )
+        assert (
+            example3 in result1
+        )
+        assert (
+            result2 == example1
+        )

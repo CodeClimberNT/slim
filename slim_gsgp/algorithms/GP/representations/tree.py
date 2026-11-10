@@ -19,12 +19,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""
-Tree class implementation for representing tree structures in genetic programming.
-"""
+"""Tree class implementation for representing tree structures in genetic programming."""
 
-from slim_gsgp.algorithms.GP.representations.tree_utils import bound_value, flatten, tree_depth, _execute_tree
 import torch
+
+from slim_gsgp.algorithms.GP.representations.tree_utils import (
+    _execute_tree,
+    flatten,
+    tree_depth,
+)
+from slim_gsgp.config.types import (
+    ConstantFunc,
+    FitnessFunc,
+    FunctionDef,
+)
+
 
 class Tree:
     """
@@ -48,13 +57,14 @@ class Tree:
         Test fitness value of the tree.
     node_count : int
         Number of nodes in the tree.
+
     """
 
-    TERMINALS = None
-    FUNCTIONS = None
-    CONSTANTS = None
+    TERMINALS: dict[str, int]
+    FUNCTIONS: dict[str, FunctionDef]
+    CONSTANTS: dict[str, ConstantFunc]
 
-    def __init__(self, repr_):
+    def __init__(self, repr_: tuple):
         """
         Initializes a Tree object.
 
@@ -62,6 +72,7 @@ class Tree:
         ----------
         repr_ : tuple
             Representation of the tree structure.
+
         """
         self.FUNCTIONS = Tree.FUNCTIONS
         self.TERMINALS = Tree.TERMINALS
@@ -73,7 +84,7 @@ class Tree:
         self.test_fitness = None
         self.node_count = len(list(flatten(self.repr_)))
 
-    def apply_tree(self, inputs):
+    def apply_tree(self, inputs: torch.Tensor):
         """
         Evaluates the tree on input vectors.
 
@@ -86,17 +97,25 @@ class Tree:
         -------
         float
             Output of the evaluated tree.
-        """
 
+        """
         return _execute_tree(
             repr_=self.repr_,
             X=inputs,
             FUNCTIONS=self.FUNCTIONS,
             TERMINALS=self.TERMINALS,
-            CONSTANTS=self.CONSTANTS
+            CONSTANTS=self.CONSTANTS,
         )
 
-    def evaluate(self, ffunction, X, y, testing=False, new_data = False):
+    def evaluate(
+        self,
+        ffunction: FitnessFunc,
+        X: torch.Tensor,
+        y: torch.Tensor,
+        *,
+        testing=False,
+        new_data=False,
+    ) -> float | None:
         """
         Evaluates the tree given a fitness function, input data (X), and target data (y).
 
@@ -119,6 +138,7 @@ class Tree:
             If the data is training or testing data, the fitness value is attributed to the individual.
         float
             If exposed to new data, the fitness value is returned.
+
         """
         # getting the predictions (i.e., semantics) of the individual
         preds = self.apply_tree(X)
@@ -128,13 +148,13 @@ class Tree:
             return float(ffunction(y, preds))
 
         # if not, attribute the fitness value to the individual
+        if testing:
+            self.test_fitness = ffunction(y, preds)
         else:
-            if testing:
-                self.test_fitness = ffunction(y, preds)
-            else:
-                self.fitness = ffunction(y, preds)
+            self.fitness = ffunction(y, preds)
+        return None
 
-    def predict(self, X):
+    def predict(self, X: torch.Tensor) -> torch.Tensor:
         """
         Predict the tree semantics (output) for the given input data.
 
@@ -154,6 +174,7 @@ class Tree:
         which is assumed to be another method in the same class. The `apply_tree` method
         should be defined to handle the specifics of how predictions are made based on
         the tree structure used in this model.
+
         """
         return self.apply_tree(X)
 
@@ -170,6 +191,7 @@ class Tree:
         -------
         str
             Returns the tree representation with the chosen indentation.
+
         """
         representation = []
 
@@ -180,12 +202,16 @@ class Tree:
             # if the function has an arity of 2, process both left and right subtrees
             if Tree.FUNCTIONS[function_name]["arity"] == 2:
                 left_subtree, right_subtree = self.repr_[1], self.repr_[2]
-                representation.append(Tree(left_subtree).get_tree_representation(indent + "  "))
-                representation.append(Tree(right_subtree).get_tree_representation(indent + "  "))
+                representation.extend((
+                    Tree(left_subtree).get_tree_representation(indent + "  "),
+                    Tree(right_subtree).get_tree_representation(indent + "  "),
+                ))
             # if the function has an arity of 1, process the left subtree
             else:
                 left_subtree = self.repr_[1]
-                representation.append(Tree(left_subtree).get_tree_representation(indent + "  "))
+                representation.append(
+                    Tree(left_subtree).get_tree_representation(indent + "  "),
+                )
 
             representation.append(indent + ")\n")
         else:  # If it's a terminal node
@@ -202,11 +228,5 @@ class Tree:
         indent : str, optional
             Indentation for tree structure representation. Default is an empty string.
 
-        Returns
-        -------
-        None
-            Prints the tree representation as a string with indentation.
-
         """
-
         print(self.get_tree_representation(indent=indent))

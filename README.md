@@ -18,9 +18,15 @@ To use the GP algorithm, you can use the following example:
 
 ```python
 from slim_gsgp.main_gp import gp  # import the slim_gsgp library
-from slim_gsgp.datasets.data_loader import load_ppb  # import the loader for the dataset PPB
-from slim_gsgp.evaluators.fitness_functions import rmse  # import the rmse fitness metric
-from slim_gsgp.utils.utils import train_test_split  # import the train-test split function
+from slim_gsgp.datasets.data_loader import (
+    load_ppb,
+)  # import the loader for the dataset PPB
+from slim_gsgp.evaluators.fitness_functions import (
+    rmse,
+)  # import the rmse fitness metric
+from slim_gsgp.utils.utils import (
+    train_test_split,
+)  # import the train-test split function
 
 # Load the PPB dataset
 X, y = load_ppb(X_y=True)
@@ -32,9 +38,15 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, p_test=0.4)
 X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, p_test=0.5)
 
 # Apply the GP algorithm
-final_tree = gp(X_train=X_train, y_train=y_train,
-                X_test=X_val, y_test=y_val,
-                dataset_name='ppb', pop_size=100, n_iter=100)
+final_tree = gp(
+    X_train=X_train,
+    y_train=y_train,
+    X_test=X_val,
+    y_test=y_val,
+    dataset_name="ppb",
+    pop_size=100,
+    n_iter=100,
+)
 
 # Show the best individual structure at the last generation
 final_tree.print_tree_representation()
@@ -51,9 +63,15 @@ To use the GSGP algorithm, you can use the following example:
 
 ```python
 from slim_gsgp.main_gsgp import gsgp  # import the slim_gsgp library
-from slim_gsgp.datasets.data_loader import load_ppb  # import the loader for the dataset PPB
-from slim_gsgp.evaluators.fitness_functions import rmse  # import the rmse fitness metric
-from slim_gsgp.utils.utils import train_test_split  # import the train-test split function
+from slim_gsgp.datasets.data_loader import (
+    load_ppb,
+)  # import the loader for the dataset PPB
+from slim_gsgp.evaluators.fitness_functions import (
+    rmse,
+)  # import the rmse fitness metric
+from slim_gsgp.utils.utils import (
+    train_test_split,
+)  # import the train-test split function
 
 
 # Load the PPB dataset
@@ -66,10 +84,18 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, p_test=0.4)
 X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, p_test=0.5)
 
 # Apply the Standard GSGP algorithm
-final_tree = gsgp(X_train=X_train, y_train=y_train,
-                  X_test=X_val, y_test=y_val,
-                  dataset_name='ppb', pop_size=100, n_iter=100,
-                  reconstruct=True, ms_lower=0, ms_upper=1)
+final_tree = gsgp(
+    X_train=X_train,
+    y_train=y_train,
+    X_test=X_val,
+    y_test=y_val,
+    dataset_name="ppb",
+    pop_size=100,
+    n_iter=100,
+    reconstruct=True,
+    ms_lower=0,
+    ms_upper=1,
+)
 
 # Get the prediction of the best individual on the test set
 predictions = final_tree.predict(X_test)
@@ -83,9 +109,15 @@ To use the SLIM GSGP algorithm, you can use the following example:
 
 ```python
 from slim_gsgp.main_slim import slim  # import the slim_gsgp library
-from slim_gsgp.datasets.data_loader import load_ppb  # import the loader for the dataset PPB
-from slim_gsgp.evaluators.fitness_functions import rmse  # import the rmse fitness metric
-from slim_gsgp.utils.utils import train_test_split  # import the train-test split function
+from slim_gsgp.datasets.data_loader import (
+    load_ppb,
+)  # import the loader for the dataset PPB
+from slim_gsgp.evaluators.fitness_functions import (
+    rmse,
+)  # import the rmse fitness metric
+from slim_gsgp.utils.utils import (
+    train_test_split,
+)  # import the train-test split function
 
 # Load the PPB dataset
 X, y = load_ppb(X_y=True)
@@ -97,10 +129,19 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, p_test=0.4)
 X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, p_test=0.5)
 
 # Apply the SLIM GSGP algorithm
-final_tree = slim(X_train=X_train, y_train=y_train,
-                  X_test=X_val, y_test=y_val,
-                  dataset_name='ppb', slim_version='SLIM*ABS', pop_size=100, n_iter=100,
-                  ms_lower=0, ms_upper=1, p_inflate=0.5)
+final_tree = slim(
+    X_train=X_train,
+    y_train=y_train,
+    X_test=X_val,
+    y_test=y_val,
+    dataset_name="ppb",
+    slim_version="SLIM*ABS",
+    pop_size=100,
+    n_iter=100,
+    ms_lower=0,
+    ms_upper=1,
+    p_inflate=0.5,
+)
 
 # Show the best individual structure at the last generation
 final_tree.print_tree_representation()
@@ -190,10 +231,10 @@ To save and load individuals created with the `slim_gsgp` library, users can uti
 
 ```python
 # Saving the individual to a file
-final_tree.save_to_file('path/your_file.txt')
+final_tree.save_to_file("path/your_file.txt")
 
 # Loading the individual from a file
-loaded_tree = Individual.load_from_file('path/your_file.txt')
+loaded_tree = Individual.load_from_file("path/your_file.txt")
 ```
 
 

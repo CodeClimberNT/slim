@@ -22,11 +22,21 @@
 """
 Population Class for SLIM GSGP using PyTorch.
 """
-from slim_gsgp.utils.utils import _evaluate_slim_individual
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from joblib import Parallel, delayed
 
+from slim_gsgp.utils.utils import _evaluate_slim_individual
+
+if TYPE_CHECKING:
+    from slim_gsgp.algorithms.SLIM_GSGP.representations.individual import Individual
+
+
 class Population:
-    def __init__(self, population):
+    def __init__(self, population: list[Individual]):
         """
         Initialize the Population with a list of individuals.
 
@@ -38,6 +48,7 @@ class Population:
         Returns
         -------
         None
+
         """
         self.population = population
         self.size = len(population)
@@ -60,10 +71,11 @@ class Population:
         Returns
         -------
         None
+
         """
         # computing the semantics for all the individuals in the population
         [
-            individual.calculate_semantics(inputs, testing)
+            individual.calculate_semantics(inputs, testing=testing)
             for individual in self.population
         ]
 
@@ -88,6 +100,7 @@ class Population:
         -------
         int
             Size of the population.
+
         """
         return self.size
 
@@ -104,6 +117,7 @@ class Population:
         -------
         Individual
             The individual at the specified index.
+
         """
         return self.population[item]
 
@@ -125,6 +139,7 @@ class Population:
         Returns
         -------
         None
+
         """
         # evaluating all the individuals in the population
         [
@@ -152,12 +167,18 @@ class Population:
         Returns
         -------
         None
+
         """
         # Evaluates individuals' fitnesses
         self.fit = Parallel(n_jobs=n_jobs)(
-            delayed(_evaluate_slim_individual)(individual, ffunction=ffunction, y=y, operator=operator
-            ) for individual in self.population)
+            delayed(_evaluate_slim_individual)(
+                individual,
+                ffunction=ffunction,
+                y=y,
+                operator=operator,
+            )
+            for individual in self.population
+        )
 
         # Assigning individuals' fitness as an attribute
-        [self.population[i].__setattr__('fitness', f) for i, f in enumerate(self.fit)]
-
+        [self.population[i].__setattr__("fitness", f) for i, f in enumerate(self.fit)]

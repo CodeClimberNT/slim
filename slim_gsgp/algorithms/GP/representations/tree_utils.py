@@ -19,14 +19,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""
-Utility functions and tree operations for genetic programming.
-"""
+"""Utility functions and tree operations for genetic programming."""
 
 import random
+from typing import Any
 
 import numpy as np
 import torch
+
+from slim_gsgp.config.types import ConstantFunc, DepthFunc, FunctionDef
 
 
 def bound_value(vector, min_val, max_val):
@@ -46,11 +47,12 @@ def bound_value(vector, min_val, max_val):
     -------
     torch.Tensor
         A Tensor with values bounded between min_val and max_val.
+
     """
     return torch.clamp(vector, min_val, max_val)
 
 
-def flatten(data):
+def flatten(data: tuple[Any] | tuple[tuple[Any]]):
     """
     Flattens a nested tuple structure.
 
@@ -63,6 +65,7 @@ def flatten(data):
     ------
     object
         Flattened data element by element. If data is not a tuple, returns the original data itself.
+
     """
     if isinstance(data, tuple):
         for x in data:
@@ -71,7 +74,14 @@ def flatten(data):
         yield data
 
 
-def create_grow_random_tree(depth, FUNCTIONS, TERMINALS, CONSTANTS, p_c=0.3, first_call=True):
+def create_grow_random_tree(
+    depth,
+    FUNCTIONS: dict[str, FunctionDef],
+    TERMINALS: dict[str, int],
+    CONSTANTS: dict[str, ConstantFunc],
+    p_c: float = 0.3,
+    first_call: bool = True,
+):
     """
     Generates a random tree representation using the Grow method with a maximum specified depth.
 
@@ -98,10 +108,13 @@ def create_grow_random_tree(depth, FUNCTIONS, TERMINALS, CONSTANTS, p_c=0.3, fir
         The generated tree representation according to the specified parameters.
     str
         The terminal or constant node selected, depending on depth and random probabilities.
+
     """
     # defining the probability for a terminal node to be selected, if the probability of constants is not 0
     if p_c > 0:
-        p_terminal = (len(TERMINALS) + len(CONSTANTS)) / (len(TERMINALS) + len(CONSTANTS) + len(FUNCTIONS))
+        p_terminal = (len(TERMINALS) + len(CONSTANTS)) / (
+            len(TERMINALS) + len(CONSTANTS) + len(FUNCTIONS)
+        )
     else:
         p_terminal = len(TERMINALS) / (len(TERMINALS) + len(FUNCTIONS))
 
@@ -119,16 +132,43 @@ def create_grow_random_tree(depth, FUNCTIONS, TERMINALS, CONSTANTS, p_c=0.3, fir
         node = np.random.choice(list(FUNCTIONS.keys()))
         # creating the tree based on the selected function's arity
         if FUNCTIONS[node]["arity"] == 2:
-            left_subtree = create_grow_random_tree(depth - 1, FUNCTIONS, TERMINALS, CONSTANTS, p_c, False)
-            right_subtree = create_grow_random_tree(depth - 1, FUNCTIONS, TERMINALS, CONSTANTS, p_c, False)
+            left_subtree = create_grow_random_tree(
+                depth - 1,
+                FUNCTIONS,
+                TERMINALS,
+                CONSTANTS,
+                p_c,
+                False,
+            )
+            right_subtree = create_grow_random_tree(
+                depth - 1,
+                FUNCTIONS,
+                TERMINALS,
+                CONSTANTS,
+                p_c,
+                False,
+            )
             node = (node, left_subtree, right_subtree)
         else:
-            left_subtree = create_grow_random_tree(depth - 1, FUNCTIONS, TERMINALS, CONSTANTS, p_c, False)
+            left_subtree = create_grow_random_tree(
+                depth - 1,
+                FUNCTIONS,
+                TERMINALS,
+                CONSTANTS,
+                p_c,
+                False,
+            )
             node = (node, left_subtree)
     return node
 
 
-def create_full_random_tree(depth, FUNCTIONS, TERMINALS, CONSTANTS, p_c=0.3):
+def create_full_random_tree(
+    depth,
+    FUNCTIONS: dict[str, FunctionDef],
+    TERMINALS: dict[str, int],
+    CONSTANTS: dict[str, ConstantFunc],
+    p_c: float | None = 0.3,
+):
     """
     Generates a full random tree representation with a specified depth.
 
@@ -153,11 +193,12 @@ def create_full_random_tree(depth, FUNCTIONS, TERMINALS, CONSTANTS, p_c=0.3):
         The generated tree representation according to the specified parameters.
     str
         The terminal or constant node selected, depending on depth and random probabilities.
+
     """
     # if the maximum depth is 1, choose a terminal node
     if depth <= 1:
         # choosing between a terminal or a constant to be the terminal node
-        if random.random() > p_c:
+        if p_c is not None and random.random() > p_c:
             node = np.random.choice(list(TERMINALS.keys()))
         else:
             node = np.random.choice(list(CONSTANTS.keys()))
@@ -166,16 +207,34 @@ def create_full_random_tree(depth, FUNCTIONS, TERMINALS, CONSTANTS, p_c=0.3):
         node = np.random.choice(list(FUNCTIONS.keys()))
         # building the tree based on the arity of the chosen function
         if FUNCTIONS[node]["arity"] == 2:
-            left_subtree = create_full_random_tree(depth - 1, FUNCTIONS, TERMINALS, CONSTANTS, p_c)
-            right_subtree = create_full_random_tree(depth - 1, FUNCTIONS, TERMINALS, CONSTANTS, p_c)
+            left_subtree = create_full_random_tree(
+                depth - 1,
+                FUNCTIONS,
+                TERMINALS,
+                CONSTANTS,
+                p_c,
+            )
+            right_subtree = create_full_random_tree(
+                depth - 1,
+                FUNCTIONS,
+                TERMINALS,
+                CONSTANTS,
+                p_c,
+            )
             node = (node, left_subtree, right_subtree)
         else:
-            left_subtree = create_full_random_tree(depth - 1, FUNCTIONS, TERMINALS, CONSTANTS, p_c)
+            left_subtree = create_full_random_tree(
+                depth - 1,
+                FUNCTIONS,
+                TERMINALS,
+                CONSTANTS,
+                p_c,
+            )
             node = (node, left_subtree)
     return node
 
 
-def random_subtree(FUNCTIONS):
+def random_subtree(FUNCTIONS: dict[str, FunctionDef]):
     """
     Creates a function that selects a random subtree from a given tree representation.
 
@@ -195,8 +254,8 @@ def random_subtree(FUNCTIONS):
         This function navigates the tree representation recursively, choosing a subtree based on
         probabilities determined by the overall representation of the tree.
 
-        Parameters
-        ----------
+    Parameters
+    ----------
         tree : tuple
             The tree representation from which to select a subtree.
         first_call : bool, optional
@@ -204,8 +263,8 @@ def random_subtree(FUNCTIONS):
         num_of_nodes : int, optional
             The total number of nodes in the tree. Used to calculate probabilities.
 
-        Returns
-        -------
+    Returns
+    -------
         tuple
             The randomly selected subtree (or the original node if not applicable).
 
@@ -213,8 +272,12 @@ def random_subtree(FUNCTIONS):
     -----
     The returned function traverses the tree representation recursively, selecting subtrees based on random
     probabilities influenced by the representation of the tree.
+
     """
-    def random_subtree_picker(tree, first_call=True, num_of_nodes=None):
+
+    def random_subtree_picker(
+        tree: tuple, first_call: bool | None = True, num_of_nodes: int | None = None
+    ):
         """
         Selects a random subtree from the given tree representation.
 
@@ -234,6 +297,7 @@ def random_subtree(FUNCTIONS):
         -------
         tuple
             The randomly selected subtree (or the original node if not applicable).
+
         """
         if isinstance(tree, tuple):
             current_number_of_nodes = (
@@ -267,13 +331,13 @@ def random_subtree(FUNCTIONS):
 
             if subtree_exploration == 0:
                 return tree
-            elif subtree_exploration == 1:
+            if subtree_exploration == 1:
                 return (
                     random_subtree_picker(tree[1], False)
                     if isinstance(tree[1], tuple)
                     else tree[1]
                 )
-            elif subtree_exploration == 2:
+            if subtree_exploration == 2:
                 return (
                     random_subtree_picker(tree[2], False)
                     if isinstance(tree[2], tuple)
@@ -285,7 +349,7 @@ def random_subtree(FUNCTIONS):
     return random_subtree_picker
 
 
-def substitute_subtree(FUNCTIONS):
+def substitute_subtree(FUNCTIONS: dict[str, FunctionDef]):
     """
     Generates a function that substitutes a specific subtree in a tree representation with a new subtree.
 
@@ -307,8 +371,8 @@ def substitute_subtree(FUNCTIONS):
         representation and replaces it with the new subtree when found. If the original tree
         representation is a terminal or equal to the new one, return it.
 
-        Parameters
-        ----------
+    Parameters
+    ----------
         tree : tuple or str
             The tree representation in which to perform the substitution. Can be a terminal.
         target_subtree : tuple or str
@@ -316,8 +380,8 @@ def substitute_subtree(FUNCTIONS):
         new_subtree : tuple or str
             The subtree to insert in place of the target subtree.
 
-        Returns
-        -------
+    Returns
+    -------
         tuple
             The modified tree representation with the target subtree replaced by the new subtree.
         str
@@ -327,6 +391,7 @@ def substitute_subtree(FUNCTIONS):
     -----
     The returned function performs replacements while preserving the tree structure based on
     the arity of the function nodes.
+
     """
 
     def substitute(tree, target_subtree, new_subtree):
@@ -352,17 +417,18 @@ def substitute_subtree(FUNCTIONS):
             The modified tree representation with the target subtree replaced by the new subtree.
         str
             The new tree leaf node if the original is a leaf.
+
         """
         if tree == target_subtree:
             return new_subtree
-        elif isinstance(tree, tuple):
+        if isinstance(tree, tuple):
             if FUNCTIONS[tree[0]]["arity"] == 2:
                 return (
                     tree[0],
                     substitute(tree[1], target_subtree, new_subtree),
                     substitute(tree[2], target_subtree, new_subtree),
                 )
-            elif FUNCTIONS[tree[0]]["arity"] == 1:
+            if FUNCTIONS[tree[0]]["arity"] == 1:
                 return tree[0], substitute(tree[1], target_subtree, new_subtree)
         else:
             return tree
@@ -370,7 +436,12 @@ def substitute_subtree(FUNCTIONS):
     return substitute
 
 
-def tree_pruning(TERMINALS, CONSTANTS, FUNCTIONS, p_c=0.3):
+def tree_pruning(
+    TERMINALS: dict[str, int],
+    CONSTANTS: dict[str, ConstantFunc],
+    FUNCTIONS: dict[str, FunctionDef],
+    p_c: float | None = 0.3,
+):
     """
     Generates a function that reduces both sides of a tree representation to a specific depth.
 
@@ -397,21 +468,8 @@ def tree_pruning(TERMINALS, CONSTANTS, FUNCTIONS, p_c=0.3):
         if the target depth is reached, ensuring the tree representation does not exceed the
         specified depth.
 
-        Parameters
-        ----------
-        tree : tuple or str
-            The tree representation to be pruned.
-        target_depth : int
-            The depth to which the tree representation should be pruned.
-
-        Returns
-        -------
-        tuple
-            The pruned tree representation, which may consist of terminals, constants, or
-            a modified subtree.
-        str
-            The pruned tree if it is a leaf.
     """
+
     def pruning(tree, target_depth):
         """
         Prunes the given tree representation to the specified depth.
@@ -434,27 +492,34 @@ def tree_pruning(TERMINALS, CONSTANTS, FUNCTIONS, p_c=0.3):
             a modified subtree.
         str
             The pruned tree if it is a leaf.
+
+        Raises
+        ------
+        ValueError
+            When the tree to prune as a node with arity >= 3
+
         """
         if target_depth <= 1 and tree not in TERMINALS:
             return (
                 np.random.choice(list(TERMINALS.keys()))
-                if random.random() > p_c
+                if p_c is not None and random.random() > p_c
                 else np.random.choice(list(CONSTANTS.keys()))
             )
-        elif not isinstance(tree, tuple):
+        if not isinstance(tree, tuple):
             return tree
         if FUNCTIONS[tree[0]]["arity"] == 2:
             new_left_subtree = pruning(tree[1], target_depth - 1)
             new_right_subtree = pruning(tree[2], target_depth - 1)
             return tree[0], new_left_subtree, new_right_subtree
-        elif FUNCTIONS[tree[0]]["arity"] == 1:
+        if FUNCTIONS[tree[0]]["arity"] == 1:
             new_left_subtree = pruning(tree[1], target_depth - 1)
             return tree[0], new_left_subtree
+        raise ValueError("Tree misconstructed")
 
     return pruning
 
 
-def tree_depth(FUNCTIONS):
+def tree_depth(FUNCTIONS: dict[str, FunctionDef]) -> DepthFunc:
     """
     Generates a function that calculates the depth of a given tree representation.
 
@@ -475,23 +540,14 @@ def tree_depth(FUNCTIONS):
         This function determines the depth by recursively computing the maximum
         depth of the left and right subtrees and adding one for the current node.
 
-        Parameters
-        ----------
-        tree : tuple or str
-            The tree representation for which to calculate the depth. It can also be
-            a terminal node represented as a string.
-
-        Returns
-        -------
-        int
-            The depth of the tree.
-
     Notes
     -----
     The returned function traverses the tree representation recursively, determining
     the depth based on the max of the subtree depths.
+
     """
-    def depth(tree):
+
+    def depth(tree: tuple | str) -> int:
         """
         Calculates the depth of the given tree.
 
@@ -508,22 +564,28 @@ def tree_depth(FUNCTIONS):
         -------
         int
             The depth of the tree.
+
         """
         if not isinstance(tree, tuple):
             return 1
-        else:
-            if FUNCTIONS[tree[0]]["arity"] == 2:
-                left_depth = depth(tree[1])
-                right_depth = depth(tree[2])
-            elif FUNCTIONS[tree[0]]["arity"] == 1:
-                left_depth = depth(tree[1])
-                right_depth = 0
-            return 1 + max(left_depth, right_depth)
+        if FUNCTIONS[tree[0]]["arity"] == 2:
+            left_depth = depth(tree[1])
+            right_depth = depth(tree[2])
+        elif FUNCTIONS[tree[0]]["arity"] == 1:
+            left_depth = depth(tree[1])
+            right_depth = 0
+        return 1 + max(left_depth, right_depth)
 
     return depth
 
 
-def _execute_tree(repr_, X, FUNCTIONS, TERMINALS, CONSTANTS):
+def _execute_tree(
+    repr_: tuple | list,
+    X: torch.Tensor,
+    FUNCTIONS: dict[str, FunctionDef],
+    TERMINALS: dict[str, int],
+    CONSTANTS: dict[str, ConstantFunc],
+) -> float:
     """
     Evaluates a tree genotype on input vectors.
 
@@ -531,6 +593,9 @@ def _execute_tree(repr_, X, FUNCTIONS, TERMINALS, CONSTANTS):
     ----------
     repr_ : tuple
         Tree representation.
+
+    X : torch.Tensor
+        Dataset.
 
     FUNCTIONS : dict
         Dictionary of allowed functions in the tree representation.
@@ -545,28 +610,51 @@ def _execute_tree(repr_, X, FUNCTIONS, TERMINALS, CONSTANTS):
     -------
     float
         Output of the evaluated tree representation.
+
+    Raises
+    ------
+    ValueError
+        When the tree node is a terminal node but it is not present nor in `CONSTANTS` nor in `TERMINALS`
+
     """
     if isinstance(repr_, tuple):  # If it's a function node
         function_name = repr_[0]
         if FUNCTIONS[function_name]["arity"] == 2:
             left_subtree, right_subtree = repr_[1], repr_[2]
-            left_result = _execute_tree(left_subtree, X, FUNCTIONS, TERMINALS,
-                                        CONSTANTS)  # equivalent to Tree(left_subtree).apply_tree(inputs) if no parallelization were used
-            right_result = _execute_tree(right_subtree, X, FUNCTIONS, TERMINALS,
-                                         CONSTANTS)  # equivalent to Tree(right_subtree).apply_tree(inputs) if no parallelization were used
+            left_result = _execute_tree(
+                left_subtree,
+                X,
+                FUNCTIONS,
+                TERMINALS,
+                CONSTANTS,
+            )  # equivalent to Tree(left_subtree).apply_tree(inputs) if no parallelization were used
+            right_result = _execute_tree(
+                right_subtree,
+                X,
+                FUNCTIONS,
+                TERMINALS,
+                CONSTANTS,
+            )  # equivalent to Tree(right_subtree).apply_tree(inputs) if no parallelization were used
             output = FUNCTIONS[function_name]["function"](
-                left_result, right_result
+                left_result,
+                right_result,
             )
         else:
             left_subtree = repr_[1]
-            left_result = _execute_tree(left_subtree, X, FUNCTIONS, TERMINALS,
-                                        CONSTANTS)  # equivalent to Tree(left_subtree).apply_tree(inputs) if no parallelization were used
+            left_result = _execute_tree(
+                left_subtree,
+                X,
+                FUNCTIONS,
+                TERMINALS,
+                CONSTANTS,
+            )  # equivalent to Tree(left_subtree).apply_tree(inputs) if no parallelization were used
             output = FUNCTIONS[function_name]["function"](left_result)
 
         return bound_value(output, -1e12, 1e12)
 
-    else:  # If it's a terminal node
-        if repr_ in TERMINALS:
-            return X[:, TERMINALS[repr_]]
-        elif repr_ in CONSTANTS:
-            return CONSTANTS[repr_](None)
+    # If it's a terminal node
+    if repr_ in TERMINALS:
+        return X[:, TERMINALS[repr_]]
+    if repr_ in CONSTANTS:
+        return CONSTANTS[repr_]()
+    raise ValueError("Tree ")

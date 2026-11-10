@@ -24,9 +24,15 @@ Tree Class for Genetic Programming using PyTorch.
 """
 
 import torch
+
 from slim_gsgp.algorithms.GP.representations.tree_utils import flatten, tree_depth
-from slim_gsgp.algorithms.GSGP.representations.tree_utils import apply_tree, nested_depth_calculator, nested_nodes_calculator
 from slim_gsgp.algorithms.GSGP.operators.crossover_operators import geometric_crossover
+from slim_gsgp.algorithms.GSGP.representations.tree_utils import (
+    apply_tree,
+    nested_depth_calculator,
+    nested_nodes_calculator,
+)
+from slim_gsgp.config.types import FitnessFunc
 
 
 class Tree:
@@ -55,7 +61,9 @@ class Tree:
         The fitness value of the tree. Defaults to None.
     test_fitness : float or None
         The fitness value of the tree during testing. Defaults to None.
+
     """
+
     FUNCTIONS = None
     TERMINALS = None
     CONSTANTS = None
@@ -124,6 +132,7 @@ class Tree:
         Returns
         -------
         None
+
         """
         # if testing
         if testing and self.test_semantics is None:
@@ -138,7 +147,8 @@ class Tree:
                 # otherwise, the semantics are computed by calling the operator (crossover or mutation)
                 # with the remaindin structure of the individual
                 self.test_semantics = self.structure[0](
-                    *self.structure[1:], testing=True
+                    *self.structure[1:],
+                    testing=True,
                 )
         # if training
         elif self.train_semantics is None:
@@ -153,10 +163,13 @@ class Tree:
                 # otherwise, the semantics are computed by calling the operator (crossover or mutation)
                 # with the remaining structure of the individual
                 self.train_semantics = self.structure[0](
-                    *self.structure[1:], testing=False
+                    *self.structure[1:],
+                    testing=False,
                 )
 
-    def evaluate(self, ffunction, y, testing=False, X=None):
+    def evaluate(
+        self, ffunction: FitnessFunc, y, *, testing=False, X=None
+    ) -> torch.Tensor | None:
         """
         Evaluate the tree using a fitness function.
 
@@ -181,20 +194,24 @@ class Tree:
             Returns nothing if no new data is provided, as the training and testing fitness is stored as an attribute.
         float
             The fitness value of the tree when evaluated with new data.
+
         """
         # if data is provided
         if X is not None:
             # obtaining the semantics of the individual either by calling apply_tree (if it's a base (gp) tree) or
             # by calling the operator with the remaining structure of the individual
-            semantics = apply_tree(self, X) if isinstance(self.structure, tuple) \
+            semantics = (
+                apply_tree(self, X)
+                if isinstance(self.structure, tuple)
                 else self.structure[0](*self.structure[1:], testing=False)
+            )
             return ffunction(y, semantics)
         # if data is not provided
+        if testing:
+            self.test_fitness = ffunction(y, self.test_semantics)
         else:
-            if testing:
-                self.test_fitness = ffunction(y, self.test_semantics)
-            else:
-                self.fitness = ffunction(y, self.train_semantics)
+            self.fitness = ffunction(y, self.train_semantics)
+        return None
 
     def predict(self, data):
         """
@@ -226,36 +243,40 @@ class Tree:
 
         The combining function is called with the predictions of the base trees and the
         extracted parameters, along with `testing` set to False and `new_data` set to True.
-        """
 
+        """
         # seeing if the tree has the structure attribute, if not reconstruct was set to false during learning
         if not hasattr(self, "structure"):
-            raise Exception("If reconstruct was set to False, .predict() is not available.")
+            raise Exception(
+                "If reconstruct was set to False, .predict() is not available.",
+            )
 
         # if the individual is a base (gp) tree, use apply_tree to compute its semantics
         if isinstance(self.structure, tuple):
             return apply_tree(self, data)
 
         # if it's not, compute its semantics by calling its operator (crossover or mutation) with its base trees
-        else:
-            # getting the mutation steps used
-            ms = [ms for ms in self.structure[1:] if isinstance(ms, float)]
-            # getting the base trees used
-            base_trees = list(filter(lambda x: isinstance(x, Tree), self.structure))
+        # getting the mutation steps used
+        ms = [ms for ms in self.structure[1:] if isinstance(ms, float)]
+        # getting the base trees used
+        base_trees = list(filter(lambda x: isinstance(x, Tree), self.structure))
 
-            # if crossover
-            if self.structure[0] == geometric_crossover:
-                return self.structure[0](
-                    *[tree.predict(data) for tree in base_trees[:-1]], torch.sigmoid(base_trees[-1].predict(data)),
-                    testing=False, new_data=True
-                )
-            # if mutation
-            else:
-                # only apply the sigmoid to the random trees (in indexes 1 and 2)
-                return self.structure[0](
-                    *[torch.sigmoid(tree.predict(data)) if i != 0 else tree.predict(data) for i, tree in
-                      enumerate(base_trees)], *ms, testing=False, new_data=True
-                )
-
-
-
+        # if crossover
+        if self.structure[0] == geometric_crossover:
+            return self.structure[0](
+                *[tree.predict(data) for tree in base_trees[:-1]],
+                torch.sigmoid(base_trees[-1].predict(data)),
+                testing=False,
+                new_data=True,
+            )
+        # if mutation
+        # only apply the sigmoid to the random trees (in indexes 1 and 2)
+        return self.structure[0](
+            *[
+                torch.sigmoid(tree.predict(data)) if i != 0 else tree.predict(data)
+                for i, tree in enumerate(base_trees)
+            ],
+            *ms,
+            testing=False,
+            new_data=True,
+        )
