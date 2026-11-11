@@ -93,19 +93,22 @@ class Population:
         ]
 
         # Create matrix M of square errors
-        # Each column is a specific row of the dataset
-        # Each row is an individual of the population
         if create_matrix:
             # TODO: ASSUMPTION -> The list stays ordered!
-            M = torch.stack(y_pred, dim=0)
-            for row in range(M.size()[0]):
-                if ffunction(y, M[row]) != self.fit[row]:
-                    print("PROBLEM")
-                # TODO:HERE! Matrix done
+            # Shape: (number of individuals, number of samples)
+            # print(X.shape)
+            # sys.exit()
+            M = torch.empty((len(y_pred), X.shape[0]))
+            for row in range(M.shape[0]):
+                M[row] = se(y, y_pred[row])
 
-            self.fitness_case_column = [
-                ffunction(y, y_pred_ind) for y_pred_ind in y_pred
-            ]
+            fitnesses = M.mean(dim=(1))
+            for row in range(M.shape[0]):
+                # TODO: Assumption! consider MSE
+                # as the only fitness function used here
+                if not torch.allclose(fitnesses[row], self.fit[row]):
+                    print("PROBLEM", fitnesses[row], self.fit[row])
+                # TODO:HERE! Matrix done
 
         # Assign individuals' fitness
         for i, f in enumerate(self.fit):
