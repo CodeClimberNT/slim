@@ -22,7 +22,7 @@
 """Utility functions and tree operations for genetic programming."""
 
 import random
-from typing import Any
+from collections.abc import Iterable, Iterator
 
 import numpy as np
 import torch
@@ -52,7 +52,7 @@ def bound_value(vector: torch.Tensor, min_val: float, max_val: float) -> torch.T
     return torch.clamp(vector, min_val, max_val)
 
 
-def flatten(data: tuple[Any] | tuple[tuple[Any]]):
+def flatten[T](data: Iterable[T] | Iterable[Iterable[T]]) -> Iterator[T]:
     """
     Flattens a nested tuple structure.
 

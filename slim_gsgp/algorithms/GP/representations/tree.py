@@ -21,6 +21,8 @@
 # SOFTWARE.
 """Tree class implementation for representing tree structures in genetic programming."""
 
+from collections.abc import Iterable
+
 import torch
 
 from slim_gsgp.algorithms.GP.representations.tree_utils import (
@@ -64,7 +66,7 @@ class Tree:
     FUNCTIONS: FunctionDef
     CONSTANTS: dict[str, ConstantFunc]
 
-    def __init__(self, repr_: torch.Tensor):
+    def __init__(self, repr_: Iterable[float]):
         """
         Initializes a Tree object.
 
@@ -80,7 +82,7 @@ class Tree:
 
         self.repr_ = repr_
         self.depth = tree_depth(Tree.FUNCTIONS)(repr_)
-        self.fitness: torch.Tensor | None = None
+        self.fitness: torch.Tensor
         self.test_fitness: torch.Tensor | None = None
         self.node_count = len(list(flatten(self.repr_)))
 

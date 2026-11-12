@@ -31,6 +31,8 @@ import pandas as pd
 if TYPE_CHECKING:
     from uuid import UUID
 
+    import torch
+
     from slim_gsgp.config.types import GPParameters, GPPiInit, GPSolveParameters
 
 
@@ -94,11 +96,11 @@ def merge_settings(
 def logger(
     path: str,
     generation: int,
-    elite_fit: float,
+    elite_fit: float | torch.Tensor,
     timing: float,
-    nodes: int,
-    additional_infos: list | None = None,
-    run_info: list | None = None,
+    nodes: float,
+    additional_infos: list[float | str] | None = None,
+    run_info: list[float | str] | None = None,
     seed: int = 0,
 ) -> None:
     """
@@ -134,7 +136,7 @@ def logger(
         if additional_infos is not None:
             try:
                 additional_infos[0] = float(additional_infos[0])
-            except:
+            except TypeError:
                 additional_infos[0] = "None"
             infos.extend(additional_infos)
 

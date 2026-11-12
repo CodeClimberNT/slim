@@ -56,7 +56,7 @@ class Population:
         y: torch.Tensor,
         n_jobs: int = 1,
         *,
-        create_matrix: bool = True,
+        new_fitness: bool = True,
     ) -> None:
         """
         Evaluates the population given a certain fitness function, input data (X), and target data (y).
@@ -73,6 +73,13 @@ class Population:
             The expected output (target) values.
         n_jobs : int
             The maximum number of concurrently running jobs for joblib parallelization.
+        new_fitness : bool
+            Create or not a fitness matrix based on the current population and dataset provided.
+
+        Raises
+        ------
+        ValueError
+            When the fitness matrix does not match with the `ffunction` results
 
         """
         # Evaluates individuals' semantics
@@ -92,8 +99,8 @@ class Population:
             ffunction(y, y_pred_ind) for y_pred_ind in y_pred
         ]
 
-        # Create matrix M of square errors
-        if create_matrix:
+        if new_fitness:
+            # Create matrix M of square errors
             # TODO: ASSUMPTION -> The list stays ordered!
             # Shape: (number of individuals, number of samples)
             # print(X.shape)
@@ -102,13 +109,18 @@ class Population:
             for row in range(M.shape[0]):
                 M[row] = se(y, y_pred[row])
 
-            fitnesses = M.mean(dim=(1))
+            ind_fitnesses = M.mean(dim=1)
+            fc_fitnesses = M.mean(dim=0)
             for row in range(M.shape[0]):
                 # TODO: Assumption! consider MSE
                 # as the only fitness function used here
-                if not torch.allclose(fitnesses[row], self.fit[row]):
-                    print("PROBLEM", fitnesses[row], self.fit[row])
-                # TODO:HERE! Matrix done
+                if not torch.allclose(ind_fitnesses[row], self.fit[row]):
+                    raise ValueError(
+                        f"Fitness Matrix has discrepancies with the fitness calculated: "
+                        f"{ind_fitnesses[row]=}, {self.fit[row]=}"
+                    )
+            new_fitnesses = (M * fc_fitnesses.unsqueeze(0)).mean(dim=1)
+            self.fit = list(new_fitnesses.unbind(dim=0))
 
         # Assign individuals' fitness
         for i, f in enumerate(self.fit):

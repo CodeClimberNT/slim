@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, NotRequired, TypedDict
 
 import torch
@@ -36,9 +36,9 @@ type InitializerFunc = Callable[
     ],
     torch.Tensor,
 ]
-type MutatorFunc = Callable[[tuple | str, int | None], tuple | str]
+type MutatorFunc = Callable[[Iterable[float] | str, int | None], Iterable[float] | str]
 type FindEliteFunc = Callable[[Population, int], tuple[list[Tree], Tree]]
-type DepthFunc = Callable[[tuple | str], int]
+type DepthFunc = Callable[[Iterable[float] | str], int]
 type TreeSelector = Callable[[Population], Tree]
 
 

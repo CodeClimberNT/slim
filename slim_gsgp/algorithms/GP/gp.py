@@ -100,6 +100,7 @@ class GP:
         self.seed = seed
         self.find_elit_func = find_elit_func
         self.settings_dict = settings_dict
+        self.population: Population
 
         Tree.FUNCTIONS = pi_init["FUNCTIONS"]
         Tree.TERMINALS = pi_init["TERMINALS"]
@@ -383,12 +384,12 @@ class GP:
 
     def log_generation(
         self,
-        generation,
-        population,
-        elapsed_time,
-        log,
-        log_path,
-        run_info,
+        generation: int,
+        population: Population,
+        elapsed_time: float,
+        log: int,
+        log_path: str,
+        run_info: list[str],
     ):
         """
         Log the results for the current generation.
@@ -400,9 +401,6 @@ class GP:
             log (int): Logging level.
             log_path (str): Path to save logs.
             run_info (list): Information about the current run.
-
-        Returns:
-            None
 
         """
         if log == 2:
