@@ -31,7 +31,9 @@ from slim_gsgp.evaluators.fitness_functions import se
 
 
 class Population:
-    def __init__(self, pop: list[Tree]) -> None:
+    def __init__(
+        self, pop: list[Tree], fc_fit: list[torch.Tensor] | None = None
+    ) -> None:
         """
         Initializes a population of Trees.
 
@@ -40,14 +42,17 @@ class Population:
 
         Parameters
         ----------
-        pop : List
+        pop : list[Tree]
             The list of individual Tree objects that make up the population.
+        fc_fit: list[torch.Tensor], optional (default None)
+            List of fitnesses of fitness cases if already computed
 
         """
         self.population: list[Tree] = pop
         self.size: int = len(pop)
         self.nodes_count: int = sum(ind.node_count for ind in pop)
         self.fit: list[torch.Tensor] = []
+        self.fc_fit: list[torch.Tensor] = fc_fit or []
 
     def evaluate(
         self,
@@ -56,7 +61,7 @@ class Population:
         y: torch.Tensor,
         n_jobs: int = 1,
         *,
-        new_fitness: bool = True,
+        new_fitness: bool = False,
     ) -> None:
         """
         Evaluates the population given a certain fitness function, input data (X), and target data (y).
@@ -103,14 +108,13 @@ class Population:
             # Create matrix M of square errors
             # TODO: ASSUMPTION -> The list stays ordered!
             # Shape: (number of individuals, number of samples)
-            # print(X.shape)
-            # sys.exit()
             M = torch.empty((len(y_pred), X.shape[0]))
             for row in range(M.shape[0]):
                 M[row] = se(y, y_pred[row])
 
             ind_fitnesses = M.mean(dim=1)
             fc_fitnesses = M.mean(dim=0)
+            self.fc_fit.append(fc_fitnesses)
             for row in range(M.shape[0]):
                 # TODO: Assumption! consider MSE
                 # as the only fitness function used here

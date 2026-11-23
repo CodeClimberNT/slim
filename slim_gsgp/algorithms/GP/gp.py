@@ -27,6 +27,7 @@ from collections.abc import Callable
 
 import numpy as np
 import torch
+from torch.utils.tensorboard import SummaryWriter
 
 from slim_gsgp.algorithms.GP.operators.crossover_operators import XOFunc
 from slim_gsgp.algorithms.GP.representations.population import Population
@@ -93,7 +94,7 @@ class GP:
         self.selector = selector
         self.p_m = p_m
         self.crossover = crossover
-        self.mutator = mutator
+        self.mutator: MutatorFunc = mutator
         self.p_xo = p_xo
         self.initializer = initializer
         self.pop_size = pop_size
@@ -102,6 +103,8 @@ class GP:
         self.settings_dict = settings_dict
         self.population: Population
 
+        self.tb_writer = SummaryWriter(log_dir=f"runs/gp_experiment_seed_{self.seed}")
+
         Tree.FUNCTIONS = pi_init["FUNCTIONS"]
         Tree.TERMINALS = pi_init["TERMINALS"]
         Tree.CONSTANTS = pi_init["CONSTANTS"]
@@ -109,9 +112,9 @@ class GP:
     def solve(
         self,
         X_train: torch.Tensor,
-        X_test: torch.Tensor,
+        X_test: torch.Tensor | None,
         y_train: torch.Tensor,
-        y_test: torch.Tensor,
+        y_test: torch.Tensor | None,
         curr_dataset: str,
         n_iter: int = 20,
         elitism: bool = True,
@@ -125,7 +128,8 @@ class GP:
         n_elites: int = 1,
         depth_calculator: Callable | None = None,
         n_jobs: int = 1,
-    ):
+        new_fitness: bool = False,
+    ) -> list[torch.Tensor] | None:
         """
         Execute the Genetic Programming algorithm.
 
@@ -166,6 +170,15 @@ class GP:
         n_jobs : int, optional
             The number of jobs for parallel processing. Default is 1.
 
+        Returns
+        -------
+        # TODO: Consider compose a matrix for the final result instead of a list of tensor
+        list[torch.Tensor]
+            list of fitnesses calculated on the fitness cases during evolution.
+
+        None
+            Default behavior
+
         """
         # setting the seeds
         torch.manual_seed(self.seed)
@@ -180,7 +193,9 @@ class GP:
         )
 
         # evaluating the initial population
-        population.evaluate(ffunction, X=X_train, y=y_train, n_jobs=n_jobs)
+        population.evaluate(
+            ffunction, X=X_train, y=y_train, n_jobs=n_jobs, new_fitness=new_fitness
+        )
 
         end = time.time()
 
@@ -201,6 +216,7 @@ class GP:
                 log,
                 log_path,
                 run_info,
+                n_iteration=n_iter,
             )
 
         # displaying the results on console if verbose level is not 0
@@ -210,6 +226,9 @@ class GP:
                 0,
                 self.elite.fitness,
                 self.elite.test_fitness,
+                round(float(population.fc_fit[-1].mean()), 3)
+                if population.fc_fit
+                else None,
                 end - start,
                 self.elite.node_count,
             )
@@ -226,10 +245,10 @@ class GP:
                 X_train,
                 y_train,
                 n_jobs=n_jobs,
+                new_fitness=new_fitness,
             )
             # replacing the population with the offspring population (P = P')
             population = offs_pop
-
             end = time.time()
 
             # getting the new elite(s)
@@ -248,6 +267,7 @@ class GP:
                     log,
                     log_path,
                     run_info,
+                    n_iteration=n_iter,
                 )
 
             # displaying the results on console if verbose != 0
@@ -257,9 +277,17 @@ class GP:
                     it,
                     self.elite.fitness,
                     self.elite.test_fitness,
+                    round(float(population.fc_fit[-1].mean()), 3)
+                    if population.fc_fit
+                    else None,
                     end - start,
                     self.elite.node_count,
                 )
+        self.tb_writer.close()
+        if not new_fitness:
+            return None
+
+        return population.fc_fit
 
     def evolve_population(
         self,
@@ -271,7 +299,9 @@ class GP:
         X_train: torch.Tensor,
         y_train: torch.Tensor,
         n_jobs: int = 1,
-    ):
+        *,
+        new_fitness: bool = False,
+    ) -> tuple[Population, float]:
         """
         Evolve the population for one iteration (generation).
 
@@ -375,10 +405,11 @@ class GP:
             offs_pop = offs_pop[: population.size]
 
         # turning the offspring population into an instance of Population
-        offs_pop = Population(offs_pop)
+        offs_pop = Population(offs_pop, population.fc_fit)
         # evaluating the offspring population
-        offs_pop.evaluate(ffunction, X=X_train, y=y_train, n_jobs=n_jobs)
-
+        offs_pop.evaluate(
+            ffunction, X=X_train, y=y_train, n_jobs=n_jobs, new_fitness=new_fitness
+        )
         # retuning the offspring population and the time control variable
         return offs_pop, start
 
@@ -390,6 +421,7 @@ class GP:
         log: int,
         log_path: str,
         run_info: list[str],
+        n_iteration: int = -1,
     ):
         """
         Log the results for the current generation.
@@ -442,3 +474,42 @@ class GP:
             run_info=run_info,
             seed=self.seed,
         )
+        # TensorBoard logging
+
+        self.tb_writer.add_scalar(
+            "Fitness/Elite",
+            float(self.elite.fitness),
+            generation,
+        )
+
+        self.tb_writer.add_scalar(
+            "Performance/Generation_Time",
+            elapsed_time,
+            generation,
+        )
+
+        self.tb_writer.add_scalar(
+            "Population/Nodes",
+            float(population.nodes_count),
+            generation,
+        )
+
+        if population.fc_fit:
+            self.tb_writer.add_scalar(
+                "Fitness/FC_Mean",
+                float(population.fc_fit[-1].mean()),
+                generation,
+            )
+            self.tb_writer.add_histogram(
+                "Fitness/FC_Distribution",
+                population.fc_fit[-1].detach().cpu(),
+                generation,
+            )
+        if generation == n_iteration:
+            print(f"generation {n_iteration=} == {generation=}")
+            self.tb_writer.add_histogram(
+                "Fitness/FC_Distribution_Final",
+                population.fc_fit[-1].detach().cpu(),
+                generation,
+            )
+        self.tb_writer.flush()

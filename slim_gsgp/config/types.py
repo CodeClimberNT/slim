@@ -55,6 +55,7 @@ class GPSolveParameters(TypedDict):
     n_iter: int
     log_path: NotRequired[str]
     depth_calculator: NotRequired[DepthFunc]
+    new_fitness: bool
 
 
 class GPParameters(TypedDict):

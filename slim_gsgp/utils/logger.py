@@ -27,11 +27,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pandas as pd
+import torch
+from torch.utils.tensorboard import SummaryWriter
 
 if TYPE_CHECKING:
     from uuid import UUID
-
-    import torch
 
     from slim_gsgp.config.types import GPParameters, GPPiInit, GPSolveParameters
 

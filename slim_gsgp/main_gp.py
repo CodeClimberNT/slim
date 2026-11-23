@@ -27,9 +27,10 @@ import uuid
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, overload
 
 import torch
+from torch.utils.tensorboard import SummaryWriter
 
 from slim_gsgp.algorithms.GP.gp import GP
 from slim_gsgp.algorithms.GP.operators.mutators import mutate_tree_subtree
@@ -65,6 +66,64 @@ _CONSTANT_REPR = [
 _FUNCTION_KEYS = list(FUNCTIONS.keys())
 
 
+@overload
+def gp(
+    X_train: torch.Tensor,
+    y_train: torch.Tensor,
+    X_test: torch.Tensor | None = None,
+    y_test: torch.Tensor | None = None,
+    dataset_name: str | None = None,
+    pop_size: int = gp_parameters["pop_size"],
+    n_iter: int = gp_solve_parameters["n_iter"],
+    p_xo: float = gp_parameters["p_xo"],
+    elitism: bool = gp_solve_parameters["elitism"],
+    n_elites: int = gp_solve_parameters["n_elites"],
+    max_depth: int | None = gp_solve_parameters["max_depth"],
+    init_depth: int = gp_pi_init["init_depth"],
+    log_path: str | None = None,
+    seed: int = gp_parameters["seed"],
+    log_level: int = gp_solve_parameters["log"],
+    verbose: int = gp_solve_parameters["verbose"],
+    minimization: bool = True,
+    fitness_function: str = gp_solve_parameters["ffunction"],
+    initializer: str = gp_parameters["initializer"],
+    n_jobs: int = gp_solve_parameters["n_jobs"],
+    prob_const: float = gp_pi_init["p_c"],
+    tree_functions: list[str] = _FUNCTION_KEYS,
+    tree_constants: list[float] = _CONSTANT_REPR,
+    tournament_size: int = 2,
+    test_elite: bool = gp_solve_parameters["test_elite"],
+    new_fitness: Literal[False] = False,
+) -> Tree: ...
+@overload
+def gp(
+    X_train: torch.Tensor,
+    y_train: torch.Tensor,
+    X_test: torch.Tensor | None = None,
+    y_test: torch.Tensor | None = None,
+    dataset_name: str | None = None,
+    pop_size: int = gp_parameters["pop_size"],
+    n_iter: int = gp_solve_parameters["n_iter"],
+    p_xo: float = gp_parameters["p_xo"],
+    elitism: bool = gp_solve_parameters["elitism"],
+    n_elites: int = gp_solve_parameters["n_elites"],
+    max_depth: int | None = gp_solve_parameters["max_depth"],
+    init_depth: int = gp_pi_init["init_depth"],
+    log_path: str | None = None,
+    seed: int = gp_parameters["seed"],
+    log_level: int = gp_solve_parameters["log"],
+    verbose: int = gp_solve_parameters["verbose"],
+    minimization: bool = True,
+    fitness_function: str = gp_solve_parameters["ffunction"],
+    initializer: str = gp_parameters["initializer"],
+    n_jobs: int = gp_solve_parameters["n_jobs"],
+    prob_const: float = gp_pi_init["p_c"],
+    tree_functions: list[str] = _FUNCTION_KEYS,
+    tree_constants: list[float] = _CONSTANT_REPR,
+    tournament_size: int = 2,
+    test_elite: bool = gp_solve_parameters["test_elite"],
+    new_fitness: Literal[True] = True,
+) -> tuple[Tree, list[torch.Tensor]]: ...
 def gp(
     X_train: torch.Tensor,
     y_train: torch.Tensor,
@@ -93,7 +152,8 @@ def gp(
     tree_constants: list[float] = _CONSTANT_REPR,
     tournament_size: int = 2,
     test_elite: bool = gp_solve_parameters["test_elite"],
-) -> Tree:
+    new_fitness: bool = gp_solve_parameters["new_fitness"],
+) -> Tree | tuple[Tree, list[torch.Tensor]]:
     """
     Main function to execute the StandardGP algorithm on specified datasets.
 
@@ -194,6 +254,7 @@ def gp(
         fitness_function=fitness_function,
         initializer=initializer,
         tournament_size=tournament_size,
+        new_fitness=new_fitness,
     )
 
     assert 0 <= p_xo <= 1, "p_xo must be a number between 0 and 1"
@@ -319,12 +380,14 @@ def gp(
 
     gp_solve_parameters["n_jobs"] = n_jobs
     gp_solve_parameters["test_elite"] = test_elite
+    gp_solve_parameters["new_fitness"] = new_fitness
 
     # ================================
     #       Running the Algorithm
     # ================================
     optimizer = GP(pi_init=gp_pi_init, **gp_parameters)
-    optimizer.solve(
+
+    fitnesses = optimizer.solve(
         X_train=X_train,
         X_test=X_test,
         y_train=y_train,
@@ -338,8 +401,10 @@ def gp(
         settings=(gp_solve_parameters, gp_parameters, gp_pi_init, settings_dict),
         unique_run_id=unique_run_id,
     )
+    if fitnesses is None:
+        return optimizer.elite
 
-    return optimizer.elite
+    return optimizer.elite, fitnesses
 
 
 if __name__ == "__main__":

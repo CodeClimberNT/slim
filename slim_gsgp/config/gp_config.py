@@ -79,6 +79,7 @@ gp_solve_parameters: GPSolveParameters = {
     "n_elites": 1,
     "elitism": True,
     "n_iter": 1000,
+    "new_fitness": False,
 }
 
 

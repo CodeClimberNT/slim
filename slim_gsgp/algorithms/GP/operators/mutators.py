@@ -33,11 +33,17 @@ from slim_gsgp.algorithms.GP.representations.tree_utils import (
     random_subtree,
     substitute_subtree,
 )
-from slim_gsgp.config.types import ConstantFunc, FunctionType, MutatorFunc
+from slim_gsgp.config.types import ConstantFunc, FunctionDef, FunctionType, MutatorFunc
 
 
 # Function to perform mutation on a tree.
-def mutate_tree_node(max_depth, TERMINALS, CONSTANTS, FUNCTIONS, p_c):
+def mutate_tree_node(
+    max_depth: int,
+    TERMINALS: dict[str, int],
+    CONSTANTS: dict[str, ConstantFunc],
+    FUNCTIONS: dict[str, dict[str, FunctionType | int]],
+    p_c: float,
+) -> MutatorFunc:
     """
     Generates a function for mutating a node within a tree representation based on a set of terminals, constants, and functions.
 
@@ -76,7 +82,7 @@ def mutate_tree_node(max_depth, TERMINALS, CONSTANTS, FUNCTIONS, p_c):
 
     """
 
-    def m_tn(tree):
+    def m_tn(tree: tuple[str, ...]):
         """
         Performs subtree mutation within a tree representation.
 
@@ -112,7 +118,9 @@ def mutate_tree_node(max_depth, TERMINALS, CONSTANTS, FUNCTIONS, p_c):
             node_to_mutate = np.random.randint(0, 2)
 
         # obtaining the mutating function
-        inside_m = mutate_tree_node(max_depth - 1, TERMINALS, CONSTANTS, FUNCTIONS, p_c)
+        inside_m: MutatorFunc = mutate_tree_node(
+            max_depth - 1, TERMINALS, CONSTANTS, FUNCTIONS, p_c
+        )
 
         # if the first node is to be mutated
         if node_to_mutate == 0:
@@ -165,7 +173,7 @@ def mutate_tree_subtree(
     max_depth: int,
     TERMINALS: dict[str, int],
     CONSTANTS: dict[str, ConstantFunc],
-    FUNCTIONS: dict[str, dict[str, FunctionType | int]],
+    FUNCTIONS: FunctionDef,
     p_c: float,
 ) -> MutatorFunc:
     """

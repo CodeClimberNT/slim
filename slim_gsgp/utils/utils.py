@@ -33,7 +33,7 @@ from slim_gsgp.algorithms.GP.representations.tree_utils import (
     create_full_random_tree,
     create_grow_random_tree,
 )
-from slim_gsgp.algorithms.GSGP.representations.tree import Tree
+from slim_gsgp.algorithms.GSGP.representations.tree import Tree as GSTree
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -41,6 +41,7 @@ if TYPE_CHECKING:
     from numpy.typing import ArrayLike
 
     from slim_gsgp.algorithms.GP.representations.population import Population
+    from slim_gsgp.algorithms.GP.representations.tree import Tree
     from slim_gsgp.algorithms.SLIM_GSGP.representations.individual import Individual
     from slim_gsgp.config.types import FitnessFunc
 
@@ -200,6 +201,7 @@ def verbose_reporter(
     generation: int,
     pop_val_fitness: float,
     pop_test_fitness: float | None,
+    fc_fitness: float | None,
     timing: float,
     nodes: int,
 ):
@@ -243,6 +245,18 @@ def verbose_reporter(
             "|" + " " * 3 + "None" + " " * (23 - digits_test_fit) + "|"
         )
         test_text: str = " " * 3 + "None" + " " * (23 - digits_test_fit) + "|"
+    if fc_fitness is not None:
+        digits_fc_fit = len(str(float(fc_fitness)))
+        fc_text_init: str = (
+            " " * 3 + str(float(fc_fitness)) + " " * (23 - digits_fc_fit) + "|"
+        )
+        fc_text: str = (
+            " " * 3 + str(float(fc_fitness)) + " " * (23 - digits_fc_fit) + "|"
+        )
+    else:
+        digits_fc_fit = 4
+        fc_text_init: str = " " * 3 + "None" + " " * (23 - digits_fc_fit) + "|"
+        fc_text: str = " " * 3 + "None" + " " * (23 - digits_fc_fit) + "|"
     digits_timing = len(str(timing))
     digits_nodes = len(str(nodes))
 
@@ -253,7 +267,7 @@ def verbose_reporter(
         )
         print(
             "|         Dataset         |  Generation  |     Train Fitness     |       Test Fitness       |        "
-            "Timing          |      Nodes       |",
+            "     FC Fitness      | Timing          |      Nodes       |",
         )
         print(
             "-----------------------------------------------------------------------------------------------------------------------------------------",
@@ -272,6 +286,8 @@ def verbose_reporter(
             + str(float(pop_val_fitness))
             + " " * (20 - digits_val_fit)
             + test_text_init
+            + " " * 3
+            + fc_text_init
             + " " * 3
             + str(timing)
             + " " * (21 - digits_timing)
@@ -297,6 +313,8 @@ def verbose_reporter(
             + " " * (20 - digits_val_fit)
             + "|"
             + test_text
+            + " " * 3
+            + fc_text
             + " " * 3
             + str(timing)
             + " " * (21 - digits_timing)
@@ -367,7 +385,7 @@ def get_best_max(population: Population, n_elites: int) -> tuple[list[Tree], Tre
 
     Returns
     -------
-    list
+    list[Tree]
         The list of elite individuals.
     Individual
         Best individual from the elites.
@@ -392,7 +410,7 @@ def get_random_tree(
     grow_probability: float = 1,
     *,
     logistic: bool = True,
-) -> Tree:
+) -> GSTree:
     """
     Get a random tree using either grow or full method.
 
@@ -438,7 +456,7 @@ def get_random_tree(
             p_c,
         )
 
-    tree = Tree(
+    tree = GSTree(
         structure=tree_structure,
         train_semantics=None,
         test_semantics=None,
@@ -584,6 +602,7 @@ def validate_inputs(
     fitness_function: str | None = None,
     initializer: str | None = None,
     tournament_size: int | None = None,
+    new_fitness: bool | None = None,
 ):
     """
     Validates the inputs based on the specified conditions.
@@ -635,8 +654,10 @@ def validate_inputs(
 
     Raises
     ------
-    TypeError: If any of the input type mismatch the expected one from the documentation
-    ValueError: If the domain of the parameter exceed the expected value (e.g. `tournament_size < 2`)
+    TypeError:
+        If any of the input type mismatch the expected one from the documentation
+    ValueError:
+        If the domain of the parameter exceed the expected value (e.g. `tournament_size < 2`)
 
     """
     if not isinstance(X_train, torch.Tensor):
@@ -715,6 +736,9 @@ def validate_inputs(
 
     if tournament_size < 2:
         raise ValueError("tournament_size must be at least 2")
+
+    if new_fitness is not None and not isinstance(new_fitness, bool):
+        raise TypeError("new_fitness must be a boolean")
 
 
 def check_slim_version(slim_version: str):

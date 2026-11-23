@@ -117,6 +117,7 @@ class Tree:
         *,
         testing: bool = False,
         new_data: bool = False,
+        new_fitness: bool = False,
     ) -> float | None:
         """
         Evaluates the tree given a fitness function, input data (X), and target data (y).

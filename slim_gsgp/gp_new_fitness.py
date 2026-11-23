@@ -22,7 +22,8 @@
 from __future__ import annotations
 
 from slim_gsgp.datasets.data_loader import load_ppb
-from slim_gsgp.evaluators.fitness_functions import mse
+
+# from slim_gsgp.evaluators.fitness_functions import mse
 from slim_gsgp.main_gp import gp
 from slim_gsgp.utils.utils import train_test_split
 
@@ -35,8 +36,9 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, p_test=0.4)
 # Split the test set into validation and test sets
 X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, p_test=0.5)
 
+
 # Apply the SLIM GP algorithm
-final_tree = gp(
+new_tree, new_fitness_fc = gp(
     X_train=X_train,
     y_train=y_train,
     X_test=X_val,
@@ -45,14 +47,32 @@ final_tree = gp(
     pop_size=100,
     n_iter=100,
     fitness_function="mse",
-    # max_depth=None,
+    log_level=1,
+    new_fitness=True,
 )
+# old_tree = gp(
+#     X_train=X_train,
+#     y_train=y_train,
+#     X_test=X_val,
+#     y_test=y_val,
+#     dataset_name="ppb",
+#     pop_size=100,
+#     n_iter=100,
+#     fitness_function="mse",
+#     log_level=0,
+#     new_fitness=False,
+# )
 
-# Show the best individual structure at the last generation
-final_tree.print_tree_representation()
+# # Show the best individual structure at the last generation
+# print("========NEW=====")
+# new_tree.print_tree_representation()
+# print("========OLD=====")
+# # old_tree.print_tree_representation()
 
-# Get the prediction of the best individual on the test set
-predictions = final_tree.predict(X_test)
+# # Get the prediction of the best individual on the test set
+# new_predictions = new_tree.predict(X_test)
+# old_predictions = old_tree.predict(X_test)
 
-# Compute and print the RMSE on the test set
-print(float(mse(y_true=y_test, y_pred=predictions)))
+# # Compute and print the RMSE on the test set
+# print(float(mse(y_true=y_test, y_pred=new_predictions)))
+# print(float(mse(y_true=y_test, y_pred=old_predictions)))
